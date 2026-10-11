@@ -9,7 +9,7 @@
 **The model sees placeholders. You get the real values back.**
 
 <!-- version:start -->
-[![Release](https://img.shields.io/badge/release-v0.2.0-blue?style=flat-square)](https://github.com/baba-bytes/phantomprompt/releases/latest)
+[![Release](https://img.shields.io/badge/release-v0.3.0-blue?style=flat-square)](https://github.com/baba-bytes/phantomprompt/releases/latest)
 [![CI](https://github.com/baba-bytes/phantomprompt/actions/workflows/ci.yml/badge.svg)](https://github.com/baba-bytes/phantomprompt/actions/workflows/ci.yml)
 [![macOS](https://img.shields.io/badge/platform-macOS-000000?style=flat-square&logo=apple&logoColor=white)](#install)
 [![Go](https://img.shields.io/badge/built_with-Go-00ADD8?style=flat-square&logo=go&logoColor=white)](#development)

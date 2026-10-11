@@ -1,6 +1,6 @@
 {
   "name": "phantomprompt-local",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Local Go privacy workspace and HTTPS proxy demo",
   "type": "module",
