@@ -9,14 +9,14 @@
 **The model sees placeholders. You get the real values back.**
 
 <!-- version:start -->
-[![Release](https://img.shields.io/badge/release-v0.3.1-blue?style=flat-square)](https://github.com/baba-bytes/phantomprompt/releases/latest)
-[![CI](https://github.com/baba-bytes/phantomprompt/actions/workflows/ci.yml/badge.svg)](https://github.com/baba-bytes/phantomprompt/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/badge/release-v0.3.1-blue?style=flat-square)](https://github.com/bababytes/phantomprompt/releases/latest)
+[![CI](https://github.com/bababytes/phantomprompt/actions/workflows/ci.yml/badge.svg)](https://github.com/bababytes/phantomprompt/actions/workflows/ci.yml)
 [![macOS](https://img.shields.io/badge/platform-macOS-000000?style=flat-square&logo=apple&logoColor=white)](#install)
 [![Go](https://img.shields.io/badge/built_with-Go-00ADD8?style=flat-square&logo=go&logoColor=white)](#development)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green?style=flat-square)](LICENSE)
 <!-- version:end -->
 
-**[Download for macOS](https://github.com/baba-bytes/phantomprompt/releases/latest)**
+**[Download for macOS](https://github.com/bababytes/phantomprompt/releases/latest)**
 
 [Quick start](#quick-start) · [How it works](#how-it-works) · [Supported agents](#supported-agents) · [Trusted folders](#trusted-folders) · [FAQ](#faq) · [Development](#development) · [Contact](#say-hi-)
 
@@ -48,7 +48,7 @@ PhantomPrompt masks the formats it knows before any of this leaves your Mac. It 
 
 ### Install
 
-1. Download `PhantomPrompt-<version>.dmg` (or `PhantomPrompt-macos-arm64.zip` / `-amd64.zip`) and `SHA256SUMS` from [Releases](https://github.com/baba-bytes/phantomprompt/releases).
+1. Download `PhantomPrompt-<version>.dmg` (or `PhantomPrompt-macos-arm64.zip` / `-amd64.zip`) and `SHA256SUMS` from [Releases](https://github.com/bababytes/phantomprompt/releases).
 2. Check the download:
 
    ```sh
@@ -163,7 +163,7 @@ Either it was found in a [trusted folder](#trusted-folders), or its format is no
 <details>
 <summary><strong>What should I do if I hit a bug?</strong></summary>
 
-[Update](#update-phantomprompt) first; a newer release may already fix it. If the problem persists, [open an issue](https://github.com/baba-bytes/phantomprompt/issues) with the output of `phantom version`, the agent you used, the steps to reproduce and the error. The app log in `~/Library/Logs/PhantomPrompt/` contains no prompt text or values and helps with most reports.
+[Update](#update-phantomprompt) first; a newer release may already fix it. If the problem persists, [open an issue](https://github.com/bababytes/phantomprompt/issues) with the output of `phantom version`, the agent you used, the steps to reproduce and the error. The app log in `~/Library/Logs/PhantomPrompt/` contains no prompt text or values and helps with most reports.
 
 </details>
 
@@ -236,13 +236,13 @@ The release is signed with a Developer ID and notarized when the repository has 
 
 ## Contributing
 
-[Open an issue](https://github.com/baba-bytes/phantomprompt/issues) to report a bug or suggest a feature, or [send a pull request](https://github.com/baba-bytes/phantomprompt/pulls) to improve the code or docs. Run the checks from [Development](#development) before you send it.
+[Open an issue](https://github.com/bababytes/phantomprompt/issues) to report a bug or suggest a feature, or [send a pull request](https://github.com/bababytes/phantomprompt/pulls) to improve the code or docs. Run the checks from [Development](#development) before you send it.
 
 ## Say hi 👋
 
 Want to run PhantomPrompt at your company, need a hand setting it up, or just have an idea to talk through? Drop me a line at **baba.bytes.dev [at] gmail [dot] com**. I read everything.
 
-Found a bug? An [issue](https://github.com/baba-bytes/phantomprompt/issues) is the fastest way to get it fixed.
+Found a bug? An [issue](https://github.com/bababytes/phantomprompt/issues) is the fastest way to get it fixed.
 
 ## License
 
