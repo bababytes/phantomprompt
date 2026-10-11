@@ -34,6 +34,16 @@ It runs on your Mac and masks values before they leave it. The token map lives i
 
 > **macOS only.** The app, the panel and protected terminals need macOS. On Linux the engine and CLI compile, but there is no app and no support.
 
+## Who it's for
+
+Developers who let an AI coding agent work in the terminal, where it reads more than you see:
+
+- **Large codebases.** The agent opens files on its own: configs, fixtures, SQL dumps, `.env` files. Nobody checks each file before it goes into the prompt.
+- **Logs and data nobody has checked.** Application logs, stack traces, `kubectl logs` or API responses often carry e-mails, VINs, tokens or customer IDs. Asking the agent to analyse them sends all of it to the model.
+- **Pasted output.** A quick copy from a terminal or a ticket can hold a password you did not notice.
+
+PhantomPrompt masks the formats it knows before any of this leaves your Mac. It is a safety net, not a guarantee: names or addresses in free prose are not detected (see [Threat model](#threat-model)). Add your own pattern in the panel for values specific to your project.
+
 ## Quick start
 
 ### Install
