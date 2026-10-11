@@ -20,6 +20,8 @@
 
 [Quick start](#quick-start) · [How it works](#how-it-works) · [Supported agents](#supported-agents) · [Trusted folders](#trusted-folders) · [FAQ](#faq) · [Development](#development) · [Contact](#say-hi-)
 
+<img src="docs/assets/pipeline.gif" alt="Animation: values typed in a terminal, such as a VIN and an e-mail address, pass through PhantomPrompt and reach the AI provider as placeholders" width="720" />
+
 <code>phantom claude</code>
 
 <br />
@@ -48,24 +50,33 @@ PhantomPrompt masks the formats it knows before any of this leaves your Mac. It 
 
 ### Install
 
-1. Download `PhantomPrompt-<version>.dmg` (or `PhantomPrompt-macos-arm64.zip` / `-amd64.zip`) and `SHA256SUMS` from [Releases](https://github.com/bababytes/phantomprompt/releases).
-2. Check the download:
-
-   ```sh
-   shasum -a 256 -c SHA256SUMS --ignore-missing
-   ```
-
-3. Drag `PhantomPrompt.app` to `/Applications`. Until releases are signed with a Developer ID, macOS blocks the downloaded app; remove the quarantine flag:
+1. Download `PhantomPrompt-<version>.dmg` from [Releases](https://github.com/bababytes/phantomprompt/releases/latest), open it and drag **PhantomPrompt** to **Applications**.
+2. Let macOS run it. PhantomPrompt is not notarized by Apple yet, so macOS blocks it on first start. This command removes the "downloaded from the internet" mark from this one app:
 
    ```sh
    xattr -dr com.apple.quarantine /Applications/PhantomPrompt.app
    ```
 
-4. Make the command available, for example in `~/.zshrc`:
+3. Add the `phantom` command, then open a new terminal window:
 
    ```sh
-   alias phantom=/Applications/PhantomPrompt.app/Contents/MacOS/phantomprompt
+   echo 'alias phantom=/Applications/PhantomPrompt.app/Contents/MacOS/phantomprompt' >> ~/.zshrc
    ```
+
+Every release is built from this repository by GitHub Actions.
+
+<details>
+<summary>Check the download (optional)</summary>
+
+Download `SHA256SUMS` from the same release into the folder with the DMG and run there:
+
+```sh
+shasum -a 256 -c SHA256SUMS --ignore-missing
+```
+
+Each downloaded file should print `OK`. Command-line builds without the app are in `PhantomPrompt-macos-arm64.zip` (Apple silicon) and `PhantomPrompt-macos-amd64.zip` (Intel).
+
+</details>
 
 ### Protect your terminal
 
