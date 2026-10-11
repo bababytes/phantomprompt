@@ -1,0 +1,21 @@
+/bin/
+/dist/
+/node_modules/
+/phantomprompt
+/phantomprompt.exe
+/*.test
+/.runtime/
+*.pem
+*.key
+*.prof
+coverage.out
+*.md
+!/README.md
+!/CHANGELOG.md
+!/SECURITY.md
+!/CONTRIBUTING.md
+!/.github/**/*.md
+.DS_Store
+
+# IDE project files (user-specific)
+/.idea/

@@ -1,0 +1,19 @@
+{
+  "rules": [
+    {
+      "origin": "https://api.openai.com",
+      "path": "/v1/chat/completions",
+      "adapter": "openai-chat"
+    }
+  ],
+  "gateway_origin": "https://api.openai.com",
+  "detectors": [
+    "vin",
+    "guid",
+    "email",
+    "fields"
+  ],
+  "sensitive_fields": [
+    "customerId"
+  ]
+}

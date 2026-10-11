@@ -1,0 +1,19 @@
+{
+  "rules": [
+    {
+      "origin": "https://api.anthropic.com",
+      "path": "/v1/messages",
+      "adapter": "anthropic-messages"
+    }
+  ],
+  "gateway_origin": "https://api.anthropic.com",
+  "detectors": [
+    "vin",
+    "guid",
+    "email",
+    "fields"
+  ],
+  "sensitive_fields": [
+    "customerId"
+  ]
+}

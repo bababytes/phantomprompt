@@ -1,0 +1,27 @@
+{
+  "name": "phantomprompt-local",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local Go privacy workspace and HTTPS proxy demo",
+  "type": "module",
+  "bin": {
+    "phantomprompt": "scripts/start.mjs"
+  },
+  "scripts": {
+    "start": "node scripts/start.mjs",
+    "package:macos": "zsh scripts/package-macos.sh",
+    "build:web": "vite build",
+    "watch:web": "vite build --watch",
+    "update:macos": "zsh scripts/update-macos.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "vue": "3.5.43"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.9",
+    "vite": "8.3.4"
+  }
+}

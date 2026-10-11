@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    env:
+      MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tag matches README, package.json and CHANGELOG
+        run: zsh scripts/check-version.sh "$GITHUB_REF_NAME"
+      - run: go test -count=1 ./...
+
+      - name: Import Developer ID certificate and notary credentials
+        if: env.MACOS_CERTIFICATE_P12 != ''
+        env:
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(openssl rand -base64 24)"
+          certificate="$RUNNER_TEMP/certificate.p12"
+          printf '%s' "$MACOS_CERTIFICATE_P12" | base64 --decode > "$certificate"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$certificate" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+          rm -f "$certificate"
+          security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security default-keychain -s "$keychain"
+          xcrun notarytool store-credentials phantomprompt-notary --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD"
+          echo "PHANTOMPROMPT_SIGN_IDENTITY=$MACOS_SIGN_IDENTITY" >> "$GITHUB_ENV"
+          echo "PHANTOMPROMPT_NOTARY_PROFILE=phantomprompt-notary" >> "$GITHUB_ENV"
+
+      - name: Package
+        run: PHANTOMPROMPT_VERSION="$GITHUB_REF_NAME" zsh scripts/package-macos.sh
+      - name: App Store edition compiles (not uploaded)
+        run: PHANTOMPROMPT_VERSION="$GITHUB_REF_NAME" zsh scripts/package-mas.sh
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="$RUNNER_TEMP/notes.md"
+          awk -v heading="## [${GITHUB_REF_NAME#v}]" 'index($0, heading) == 1 { inside = 1; next } inside && /^## \[/ { exit } inside' CHANGELOG.md > "$notes"
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/PhantomPrompt-$GITHUB_REF_NAME.dmg" \
+            dist/PhantomPrompt-macos-arm64.zip \
+            dist/PhantomPrompt-macos-amd64.zip \
+            dist/SHA256SUMS \
+            --title "PhantomPrompt $GITHUB_REF_NAME" \
+            --notes-file "$notes"
+
+      - name: Remove signing keychain
+        if: always() && env.MACOS_CERTIFICATE_P12 != ''
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
