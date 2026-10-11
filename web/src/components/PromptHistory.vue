@@ -103,6 +103,7 @@ function channel(event) {
 }
 
 function statusInfo(event) {
+  if (event.phase === "control") return { text: RESULTS[event.reason] ?? event.reason, cls: event.reason === "protection_disabled" ? "status-warn" : "status-ok" };
   if (event.reason === "passed_without_restore") return { text: event.status >= 400 ? `AI service answered ${event.status} · passed to the tool` : "Sent · reply not restored", cls: "status-warn" };
   if (event.status >= 400) {
     const label = RESULTS[event.reason] ?? `Blocked · ${event.reason}`;
