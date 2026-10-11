@@ -54,6 +54,7 @@ for target_arch in arm64 amd64; do
   sign "${release_dir}/bin/phantomprompt"
   cp PhantomPrompt.command "${release_dir}/PhantomPrompt.command"
   cp LICENSE "${release_dir}/LICENSE"
+  cp NOTICE "${release_dir}/NOTICE"
   for license_file in "${license_sources[@]}"; do
     print -- "${license_file:h:t}"
     cat -- "${license_file}"
@@ -73,6 +74,7 @@ plutil -lint -s "${app_dir}/Contents/Info.plist"
 lipo -create -output "${app_dir}/Contents/MacOS/phantomprompt" dist/PhantomPrompt-macos-arm64/bin/phantomprompt dist/PhantomPrompt-macos-amd64/bin/phantomprompt
 cp dist/AppIcon.icns "${app_dir}/Contents/Resources/AppIcon.icns"
 cp LICENSE "${app_dir}/Contents/Resources/LICENSE"
+cp NOTICE "${app_dir}/Contents/Resources/NOTICE"
 cp dist/PhantomPrompt-macos-arm64/LICENSES.txt "${app_dir}/Contents/Resources/LICENSES.txt"
 sign "${app_dir}/Contents/MacOS/phantomprompt"
 sign "${app_dir}"
