@@ -47,7 +47,7 @@ func TestOnlyEventsThatMatterReachTheAppLog(t *testing.T) {
 	}
 	upstream.mangle = strings.ToUpper
 	gatewayCall(handler, base+"/v1/messages", gatewayRequest, nil)
-	if w := gatewayCall(handler, base+"/v1/messages", `{"model":"m","messages":[{"role":"user","content":[{"type":"image","source":{}}]}]}`, nil); w.Code != 422 {
+	if w := gatewayCall(handler, base+"/v1/messages", `{"model":"m","messages":[{"role":"user","content":[{"type":"future_audio","source":{}}]}]}`, nil); w.Code != 422 {
 		t.Fatalf("attachment %d", w.Code)
 	}
 	failing.Store(true)
@@ -90,5 +90,45 @@ func TestOnlyEventsThatMatterReachTheAppLog(t *testing.T) {
 	nothing.Events.Add(Event{Phase: "request", Status: 500, Reason: "without a log"})
 	if nothing.LogFolder() != "" {
 		t.Fatal("an app without a log reports a folder")
+	}
+}
+
+func TestImageIsSentUncheckedAndShownOnce(t *testing.T) {
+	folder := filepath.Join(t.TempDir(), "PhantomPrompt")
+	log, err := applog.Open(folder)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer log.Close()
+	upstream := &anthropicUpstream{}
+	app, handler := gatewayFixtureOptions(t, upstream, Options{Log: log})
+	session, secret, err := app.CreateCLISession("claude", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := strings.TrimPrefix(ClaudeBaseURL("127.0.0.1:18081", session, secret), "http://127.0.0.1:18081")
+	const image = `{"type":"image","source":{"type":"base64","media_type":"image/png","data":"iVBORw0KGgoTEST0000000000001"}}`
+	first := `{"model":"m","max_tokens":10,"stream":true,"messages":[{"role":"user","content":[` + image + `,{"type":"text","text":"What is on it?"}]}]}`
+	followUp := `{"model":"m","max_tokens":10,"stream":true,"messages":[{"role":"user","content":[` + image + `,{"type":"text","text":"What is on it?"}]},{"role":"assistant","content":"A chart."},{"role":"user","content":"Thanks"}]}`
+	for _, body := range []string{first, followUp} {
+		if w := gatewayCall(handler, base+"/v1/messages", body, nil); w.Code != 200 {
+			t.Fatalf("image request %d", w.Code)
+		}
+	}
+	upstream.mu.Lock()
+	sent := upstream.bodies
+	upstream.mu.Unlock()
+	if len(sent) != 2 || !strings.Contains(sent[0], "iVBORw0KGgoTEST0000000000001") {
+		t.Fatalf("image not sent unchanged: %v", sent)
+	}
+	if rows := app.Events.Snapshot(); len(rows) != 1 || rows[0].Matches.Attachments != 1 || rows[0].Requests != 2 || rows[0].Status != 200 {
+		t.Fatalf("rows %+v", rows)
+	}
+	data, err := os.ReadFile(filepath.Join(folder, time.Now().Format(time.DateOnly)+".log"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lines := strings.Count(string(data), `level=WARN msg="image or file sent without checking"`); lines != 1 || !strings.Contains(string(data), "attachments=1") {
+		t.Fatalf("log %s", data)
 	}
 }

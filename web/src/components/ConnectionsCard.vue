@@ -24,12 +24,12 @@ function state(item) {
     <p id="connections-status" role="status" aria-live="polite" :class="connectionStatus.kind">{{ connectionStatus.text }}</p>
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Service</th><th>Status</th><th>Prompts checked</th><th>Blocked</th><th>Last seen</th></tr></thead>
+        <thead><tr><th>Service</th><th>Status</th><th>Prompts</th><th>Blocked</th><th>Last seen</th></tr></thead>
         <tbody id="integration-rows">
           <tr v-for="item in integrations" :key="item.service">
             <td>{{ item.service }}</td>
             <td>{{ state(item) }}</td>
-            <td>{{ item.requests }}</td>
+            <td :title="`${item.requests} AI requests`">{{ item.prompts ?? 0 }}</td>
             <td>{{ item.blocked }}</td>
             <td>{{ time(item.last_seen) }}</td>
           </tr>

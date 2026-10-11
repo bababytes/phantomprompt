@@ -1,22 +1,37 @@
 <script setup>
 import { computed } from "vue";
-import { monitor } from "../monitor.js";
+import { monitor, tokenShare } from "../monitor.js";
 
 const COMPACT = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+const SIGNED = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1, signDisplay: "exceptZero" });
 
 const masked = computed(() => monitor.totals.new_values ?? 0);
+const typed = computed(() => monitor.totals.typed_values ?? 0);
+const context = computed(() => monitor.totals.context_values ?? 0);
 const overhead = computed(() => monitor.totals.token_overhead ?? 0);
+const input = computed(() => monitor.totals.input_tokens ?? 0);
+const usageOverhead = computed(() => monitor.totals.usage_overhead ?? 0);
+
 const tiles = computed(() => [
-  { id: "total-masked", value: masked.value, label: "Unique values protected", detail: "Values replaced with tokens when first seen in a session. Repeats in that session are not counted again." },
+  {
+    id: "total-masked",
+    value: masked.value,
+    label: "Unique values protected",
+    sources: masked.value ? `${typed.value} typed · ${Math.max(masked.value - typed.value - context.value, 0)} found by AI · ${context.value} tool context` : "",
+    detail: "First-seen values: typed by you, found by the AI in files and commands, or added by the tool itself.",
+  },
   { id: "total-custom", value: monitor.totals.custom ?? 0, label: "Custom word / phrase matches", detail: "Matches of your own Rule Builder rules, counted in every request, history repeats included." },
-  { id: "total-forwarded", value: monitor.totals.forwarded ?? 0, label: "Requests sent upstream", detail: "Requests masked and sent to an AI service, whatever it answered. One question is often several requests." },
-  { id: "total-blocked", value: monitor.totals.blocked ?? 0, label: "Requests / streams blocked", detail: "Requests or replies stopped because they could not be protected, e.g. an unknown format or an attachment." },
+  { id: "total-prompts", value: monitor.totals.prompts_sent ?? 0, label: "Prompts sent", detail: `Your prompts to an AI service. They took ${(monitor.totals.forwarded ?? 0).toLocaleString()} AI request(s): helper calls, tool steps, retries.` },
+  { id: "total-blocked", value: monitor.totals.blocked ?? 0, label: "Requests / streams blocked", detail: "Stopped because they could not be protected (e.g. an attachment) or failed (e.g. AI service unreachable)." },
   {
     id: "total-token-overhead",
-    value: Math.abs(overhead.value),
+    value: -overhead.value || 0,
+    signed: true,
     approximate: overhead.value !== 0,
-    label: overhead.value < 0 ? "Input tokens saved by masking (net estimate)" : "Input tokens added by masking (net estimate)",
-    detail: "Masked minus original input, by a local token estimate. Summed over every request, resent history included.",
+    share: tokenShare(usageOverhead.value, input.value),
+    extra: usageOverhead.value > 0,
+    label: "Token change from masking (net estimate)",
+    detail: "+ saved, − extra vs. no masking. Local estimate, per request incl. resent history. % of all AI input tokens.",
   },
 ]);
 </script>
@@ -24,8 +39,9 @@ const tiles = computed(() => [
 <template>
   <section class="overview" aria-label="Process totals">
     <div v-for="tile in tiles" :key="tile.id" tabindex="0" :aria-describedby="`${tile.id}-detail`">
-      <strong :id="tile.id" :title="tile.value.toLocaleString()">{{ tile.approximate ? "≈ " : "" }}{{ COMPACT.format(tile.value) }}</strong>
+      <strong :id="tile.id" :title="tile.value.toLocaleString()">{{ tile.approximate ? "≈ " : "" }}{{ (tile.signed ? SIGNED : COMPACT).format(tile.value).replace("-", "−") }}<small v-if="tile.share" class="overview-share" :class="{ extra: tile.extra }" :title="`of ${input.toLocaleString()} input tokens reported by the AI services`">{{ tile.share }}</small></strong>
       <span>{{ tile.label }}</span>
+      <small v-if="tile.sources" class="overview-sources">{{ tile.sources }}</small>
       <p :id="`${tile.id}-detail`" class="overview-detail" role="tooltip">{{ tile.detail }}</p>
     </div>
   </section>

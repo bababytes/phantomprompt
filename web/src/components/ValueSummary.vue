@@ -6,11 +6,11 @@ import { valueRows } from "../valueRows.js";
 const props = defineProps({ query: { type: String, default: "" }, services: { type: Object, required: true } });
 
 const COLUMNS = [
-  { key: "folder", label: "Folder" },
-  { key: "label", label: "Protected value" },
-  { key: "count", label: "Counter" },
-  { key: "services", label: "Services" },
-  { key: "last", label: "Last seen" },
+  { key: "folder", label: "Folder", hint: "Project folder the AI tool worked in. — means no folder, e.g. the demo." },
+  { key: "label", label: "Protected value", hint: "Value type or field name. The small tag says where it came from: typed by you, found by AI, a rule or a protected folder." },
+  { key: "count", label: "Counter", hint: "Different values protected, each counted once per session. For a folder: how many times the AI reached for it." },
+  { key: "services", label: "Services", hint: "AI tools that sent these values." },
+  { key: "last", label: "Last seen", hint: "When a value of this kind was last protected." },
 ];
 const sort = reactive({ key: "folder", dir: "asc" });
 
@@ -43,7 +43,7 @@ function sortBy(key) {
       <thead>
         <tr>
           <th v-for="column in COLUMNS" :key="column.key" :aria-sort="sort.key === column.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'">
-            <button class="sort-button" @click="sortBy(column.key)">{{ column.label }}<span aria-hidden="true">{{ sort.key === column.key ? (sort.dir === "asc" ? " ▲" : " ▼") : "" }}</span></button>
+            <button class="sort-button" :title="column.hint" @click="sortBy(column.key)">{{ column.label }}<span aria-hidden="true">{{ sort.key === column.key ? (sort.dir === "asc" ? " ▲" : " ▼") : "" }}</span></button>
           </th>
         </tr>
       </thead>

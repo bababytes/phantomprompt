@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 type anthropicUpstream struct {
@@ -316,8 +317,73 @@ func TestTerminalAndGlobalTotalsCountTheSameRequests(t *testing.T) {
 	status = 200
 	gatewayCall(handler, base+"/v1/messages", strings.Replace(gatewayRequest, "Check", "Check also 1234abcd-"+"0000-4000-8000-"+"00000000beef in", 1), nil)
 	sessions := app.CLISessions()
-	if len(sessions) != 1 || sessions[0].Prompts != 2 || sessions[0].TokenOverhead != app.TokenOverhead.Load() || uint64(sessions[0].Prompts) != app.Forwarded.Load() || sessions[0].Masked != app.MaskedNew.Load() {
+	if len(sessions) != 1 || sessions[0].Requests != 2 || sessions[0].TokenOverhead != app.TokenOverhead.Load() || uint64(sessions[0].Requests) != app.Forwarded.Load() || sessions[0].Masked != app.MaskedNew.Load() {
 		t.Fatalf("terminal %+v, global overhead %d forwarded %d new %d", sessions, app.TokenOverhead.Load(), app.Forwarded.Load(), app.MaskedNew.Load())
+	}
+}
+
+func TestTokenShareCountsOnlyRequestsWithReportedInputTokens(t *testing.T) {
+	status := http.StatusTooManyRequests
+	received, finish := make(chan struct{}), make(chan struct{})
+	upstream := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.Copy(io.Discard, r.Body)
+		if status != 200 {
+			w.WriteHeader(status)
+			return
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		io.WriteString(w, "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":7}}}\n\n")
+		w.(http.Flusher).Flush()
+		received <- struct{}{}
+		<-finish
+		io.WriteString(w, "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n")
+	})
+	app, handler := gatewayFixtureWith(t, upstream)
+	session, secret, err := app.CreateCLISession("claude", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := strings.TrimPrefix(ClaudeBaseURL("127.0.0.1:18081", session, secret), "http://127.0.0.1:18081")
+	gatewayCall(handler, base+"/v1/messages", gatewayRequest, nil)
+	unreported := app.TokenOverhead.Load()
+	if unreported == 0 || app.UsageOverhead.Load() != 0 || app.InputTokens.Load() != 0 {
+		t.Fatalf("provider error: overhead %d, reported %d, input %d", unreported, app.UsageOverhead.Load(), app.InputTokens.Load())
+	}
+	status = 200
+	done := make(chan int)
+	go func() { done <- gatewayCall(handler, base+"/v1/messages", gatewayRequest, nil).Code }()
+	<-received
+	for deadline := time.Now().Add(2 * time.Second); app.TokenOverhead.Load() == unreported && time.Now().Before(deadline); {
+		time.Sleep(time.Millisecond)
+	}
+	if app.TokenOverhead.Load() == unreported || app.UsageOverhead.Load() != 0 || app.InputTokens.Load() != 0 {
+		t.Fatalf("reply in progress: overhead %d, reported %d, input %d", app.TokenOverhead.Load(), app.UsageOverhead.Load(), app.InputTokens.Load())
+	}
+	finish <- struct{}{}
+	if code := <-done; code != 200 {
+		t.Fatalf("status %d", code)
+	}
+	if app.InputTokens.Load() != 7 || app.UsageOverhead.Load() != app.TokenOverhead.Load()-unreported {
+		t.Fatalf("reply finished: overhead %d, reported %d, input %d", app.TokenOverhead.Load(), app.UsageOverhead.Load(), app.InputTokens.Load())
+	}
+	if terminal := app.CLISessions()[0]; terminal.InputTokens != 7 || terminal.UsageOverhead != app.UsageOverhead.Load() || terminal.TokenOverhead != app.TokenOverhead.Load() {
+		t.Fatalf("terminal %+v", terminal)
+	}
+
+	go func() { done <- gatewayCall(handler, base+"/v1/messages", gatewayRequest, nil).Code }()
+	<-received
+	for deadline := time.Now().Add(2 * time.Second); app.Forwarded.Load() != 3 && time.Now().Before(deadline); {
+		time.Sleep(time.Millisecond)
+	}
+	clear := httptest.NewRequest(http.MethodDelete, "/events", nil)
+	clear.Header.Set(AccessHeader, localSecret)
+	app.Control(httptest.NewRecorder(), clear)
+	finish <- struct{}{}
+	if code := <-done; code != 200 {
+		t.Fatalf("status %d", code)
+	}
+	if terminal := app.CLISessions()[0]; app.InputTokens.Load() != 0 || app.UsageOverhead.Load() != 0 || terminal.InputTokens != 0 || terminal.UsageOverhead != 0 {
+		t.Fatalf("reply to a request sent before Clear history counted after it: input %d, reported %d, terminal %+v", app.InputTokens.Load(), app.UsageOverhead.Load(), terminal)
 	}
 }
 

@@ -18,7 +18,7 @@
 
 **[Download for macOS](https://github.com/baba-bytes/phantomprompt/releases/latest)**
 
-[Quick start](#quick-start) · [How it works](#how-it-works) · [Supported agents](#supported-agents) · [Trusted folders](#trusted-folders) · [FAQ](#faq) · [Development](#development)
+[Quick start](#quick-start) · [How it works](#how-it-works) · [Supported agents](#supported-agents) · [Trusted folders](#trusted-folders) · [FAQ](#faq) · [Development](#development) · [Contact](#say-hi-)
 
 <code>phantom claude</code>
 
@@ -227,6 +227,12 @@ The release is signed with a Developer ID and notarized when the repository has 
 ## Contributing
 
 [Open an issue](https://github.com/baba-bytes/phantomprompt/issues) to report a bug or suggest a feature, or [send a pull request](https://github.com/baba-bytes/phantomprompt/pulls) to improve the code or docs. Run the checks from [Development](#development) before you send it.
+
+## Say hi 👋
+
+Want to run PhantomPrompt at your company, need a hand setting it up, or just have an idea to talk through? Drop me a line at **baba.bytes.dev [at] gmail [dot] com**. I read everything.
+
+Found a bug? An [issue](https://github.com/baba-bytes/phantomprompt/issues) is the fastest way to get it fixed.
 
 ## License
 

@@ -544,11 +544,7 @@ var (
 )
 
 func (a *App) cliModel(r *http.Request, t tunnel, data []byte, format modelFormat) (result *http.Response) {
-	newTurn := format.newTurn(data)
-	prompt := r.Header.Get("X-Claude-Code-Prompt-Id")
-	if len(prompt) > 128 {
-		prompt = ""
-	}
+	turn := clientTurn(t.adapter, r.Header, format.newTurn(data))
 	integration := cliIntegrations[t.adapter]
 	path := normalizedPath(r.URL.Path)
 	requestStarted := time.Now()
@@ -560,7 +556,7 @@ func (a *App) cliModel(r *http.Request, t tunnel, data []byte, format modelForma
 		}
 		event.Status = result.StatusCode
 		event.ElapsedMS = milliseconds(time.Since(requestStarted))
-		a.logTurn(event, t.session, prompt, newTurn)
+		a.logTurn(event, t.session, turn)
 	}()
 	reject := func(code int, reason string) *http.Response {
 		event.Reason = reason
@@ -629,8 +625,9 @@ func (a *App) cliModel(r *http.Request, t tunnel, data []byte, format modelForma
 		return reject(502, "upstream_TLS_or_connection_failed")
 	}
 	a.detected.record(integration.Service, true, func(i *Integration) { i.Requests++ })
+	period := a.resets.Load()
 	a.cliSessions.record(t.session, integration.Service, func(s *CLISession) {
-		s.Prompts++
+		s.Requests++
 		s.Masked += uint64(counts.New)
 		s.TokenOverhead += int64(counts.TokenOverhead)
 	})
@@ -675,9 +672,8 @@ func (a *App) cliModel(r *http.Request, t tunnel, data []byte, format modelForma
 				return reject(502, "unsupported_response_content")
 			}
 		}
-		if event.InputTokens = format.inputTokens(body); event.InputTokens > 0 {
-			a.cliSessions.record(t.session, integration.Service, func(s *CLISession) { s.InputTokens += int64(event.InputTokens) })
-		}
+		event.InputTokens = format.inputTokens(body)
+		a.recordInputTokens(t.session, integration.Service, event.InputTokens, counts.TokenOverhead, period)
 		event.OverheadMS = milliseconds(prepared + time.Since(restoreStarted))
 		a.checks.time(event.OverheadMS)
 		leftovers := session.Leftovers()
@@ -702,9 +698,8 @@ func (a *App) cliModel(r *http.Request, t tunnel, data []byte, format modelForma
 		leftovers := session.Leftovers()
 		stats, err := format.restoreStream(in, io.MultiWriter(out, leftovers), session, 4<<20)
 		processing := time.Since(restoreStarted) - in.waited - out.waited
-		if streamEvent.InputTokens = stats.InputTokens; stats.InputTokens > 0 {
-			a.cliSessions.record(t.session, integration.Service, func(s *CLISession) { s.InputTokens += int64(stats.InputTokens) })
-		}
+		streamEvent.InputTokens = stats.InputTokens
+		a.recordInputTokens(t.session, integration.Service, stats.InputTokens, counts.TokenOverhead, period)
 		if err != nil && !stats.Completed {
 			streamEvent.Status, streamEvent.Reason = 502, "stream_interrupted"
 			protocol.WriteEvent(out, streamFailure(r))
@@ -718,7 +713,7 @@ func (a *App) cliModel(r *http.Request, t tunnel, data []byte, format modelForma
 		if streamEvent.Status < 400 {
 			a.checks.time(streamEvent.OverheadMS)
 		}
-		a.logTurn(streamEvent, t.session, prompt, newTurn)
+		a.logTurn(streamEvent, t.session, turn)
 		writer.CloseWithError(err)
 	}()
 	response.Body = &managedBody{ReadCloser: reader, cleanup: func() { cleanup(); upstream.Close() }}

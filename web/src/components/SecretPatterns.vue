@@ -62,6 +62,7 @@ function buildFromExample() {
   <p class="note">Keys and tokens in known formats become <code>[PP_SECRET_…]</code> and stay masked in shell, web and MCP tool calls; only file edits get the real value back. Built-in patterns have a solid outline, your own patterns a green one.</p>
   <p class="note">Passwords after a label such as <code>password:</code> or <code>DB_PASSWORD=</code> are not built in: add <code>password</code> as a named field, or add your own pattern here.</p>
   <p v-if="offCount" class="fields-warning" role="status">⚠ {{ offCount }} built-in pattern{{ offCount === 1 ? " is" : "s are" }} off — matching values reach AI providers unmasked.</p>
+  <p v-if="!workspace.customRulesOn && ownSecrets.length" class="fields-warning" role="status">⚠ Your custom rules are off, so your own patterns below are not masked.</p>
   <ul class="chips" aria-label="Secret patterns">
     <li v-for="detector in builtIn" :key="detector.id" class="chip" :class="{ off: detector.off }">
       <span :title="detector.pattern">{{ detector.name }}</span>
@@ -89,6 +90,7 @@ function buildFromExample() {
     <li v-for="detector in builtIn" :key="detector.id" :class="{ off: detector.off }">
       <span>{{ detector.name }}</span>
       <code>{{ detector.pattern }}</code>
+      <label class="switch pattern-switch"><input type="checkbox" :checked="!detector.off" :disabled="workspace.working" @change="toggle(detector)"><span class="sr-only">Mask {{ detector.name }}</span></label>
     </li>
     <li v-for="rule in ownSecrets" :key="rule.pattern" class="own">
       <span>{{ rule.name || "Your pattern" }}</span>
@@ -101,12 +103,15 @@ function buildFromExample() {
 .name-input { flex: 0 1 180px; }
 .chip span { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .note .text-button { margin: 0 8px 0 0; }
-.regex-list { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; margin: 0; padding: 0; list-style: none; }
+.regex-list { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; gap: 8px 16px; margin: 0; padding: 0; list-style: none; }
 .regex-list li { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: baseline; min-width: 0; }
 .regex-list li > span { font-size: 13px; }
 .regex-list li.own > span { color: var(--accent); }
 .regex-list li.off code { opacity: .45; text-decoration: line-through; }
 .regex-list code { justify-self: start; max-width: 100%; overflow-wrap: anywhere; }
+.pattern-switch { grid-column: 3; align-self: center; margin: 0; }
+.pattern-switch input[type=checkbox]:not(:checked) { background: transparent; border-color: var(--line-strong); }
+.pattern-switch input[type=checkbox]:not(:checked)::after { background: var(--faint); }
 @media (max-width: 550px) {
   .regex-list { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .regex-list li { display: flex; flex-direction: column; gap: 5px; }

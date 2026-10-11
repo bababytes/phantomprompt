@@ -161,3 +161,31 @@ func TestCustomRulesAreCountedPerRule(t *testing.T) {
 		t.Fatalf("patterns leaked into serialized counts: %s", encoded)
 	}
 }
+
+func TestCustomRulesSwitchedOff(t *testing.T) {
+	policy := Policy{CustomRules: []RegexRule{{Pattern: `(?i:PROJECT\.ORION)`}}, CustomOff: true}
+	if ValidatePolicy(policy) != ErrSession {
+		t.Fatal("switched-off custom rules counted as an active detector")
+	}
+	policy.VIN = true
+	s := NewSession(4096, 512<<10, policy)
+	defer s.Clear()
+	masked, counts, err := s.Mask([]string{"PROJECT.ORION"})
+	if err != nil || counts.Custom != 0 || masked[0] != "PROJECT.ORION" {
+		t.Fatal("switched-off custom rule still masked")
+	}
+	policy.CustomOff = false
+	if err := s.SetRules(policy); err != nil {
+		t.Fatal(err)
+	}
+	if _, counts, err = s.Mask([]string{"PROJECT.ORION"}); err != nil || counts.Custom != 1 {
+		t.Fatal("custom rule not applied after switching it back on")
+	}
+	if ValidatePolicy(Policy{VIN: true, CustomRules: []RegexRule{{Pattern: "("}}, CustomOff: true}) == nil {
+		t.Fatal("invalid pattern accepted while custom rules are off")
+	}
+	var saved Policy
+	if json.Unmarshal([]byte(`{"vin":true,"custom_rules":[{"pattern":"ORION"}]}`), &saved) != nil || saved.CustomOff {
+		t.Fatal("rules saved before the switch existed must stay on")
+	}
+}

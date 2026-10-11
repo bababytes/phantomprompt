@@ -44,7 +44,9 @@ func (c *agentCollector) chatContent(holder map[string]any, key string) error {
 				if err := c.field(block, "refusal"); err != nil {
 					return err
 				}
-			case "image_url", "input_audio", "file":
+			case "image_url", "file":
+				c.attachment()
+			case "input_audio":
 				return ErrAttachment
 			default:
 				if err := c.unknownBlock(block); err != nil {
@@ -85,7 +87,7 @@ func MaskOpenAIChat(data []byte, session *mask.Session, destination string, publ
 		return nil, mask.Counts{}, ErrFormat
 	}
 	var c agentCollector
-	for _, item := range messages {
+	for i, item := range messages {
 		message, ok := item.(map[string]any)
 		if !ok {
 			return nil, mask.Counts{}, ErrFormat
@@ -93,7 +95,7 @@ func MaskOpenAIChat(data []byte, session *mask.Session, destination string, publ
 		if role, _ := message["role"].(string); !blockType.MatchString(role) {
 			return nil, mask.Counts{}, ErrFormat
 		}
-		c.context = message["role"] == "system" || message["role"] == "developer"
+		c.context, c.typed, c.latest = message["role"] == "system" || message["role"] == "developer", message["role"] == "user", i == len(messages)-1
 		if err := c.chatContent(message, "content"); err != nil {
 			return nil, mask.Counts{}, err
 		}
@@ -133,7 +135,9 @@ func (c *agentCollector) responseParts(parts []any) error {
 			if err := c.field(block, "refusal"); err != nil {
 				return err
 			}
-		case "input_image", "input_file", "input_audio":
+		case "input_image", "input_file":
+			c.attachment()
+		case "input_audio":
 			return ErrAttachment
 		default:
 			if err := c.unknownBlock(block); err != nil {
@@ -163,7 +167,7 @@ func (c *agentCollector) responseItem(value any) error {
 	if _, hasRole := item["role"]; kind == "" && hasRole {
 		kind = "message"
 	}
-	c.context = item["role"] == "system" || item["role"] == "developer"
+	c.context, c.typed = item["role"] == "system" || item["role"] == "developer", kind == "message" && item["role"] == "user"
 	switch kind {
 	case "message":
 		return c.responseValue(item, "content")
@@ -196,9 +200,11 @@ func MaskOpenAIResponses(data []byte, session *mask.Session, destination string,
 	c.context = false
 	switch input := root["input"].(type) {
 	case string:
+		c.typed = true
 		c.field(root, "input")
 	case []any:
-		for _, item := range input {
+		for i, item := range input {
+			c.latest = i == len(input)-1
 			if err := c.responseItem(item); err != nil {
 				return nil, mask.Counts{}, err
 			}

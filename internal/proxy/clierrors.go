@@ -15,7 +15,7 @@ var blockHints = map[string]string{
 	"session_expired_restart_cli":          "the protected session ended or PhantomPrompt restarted. Exit and start the command again with phantom",
 	"session_unavailable":                  "the protected session ended or PhantomPrompt restarted. Exit and start the command again with phantom",
 	"unsupported_content":                  "the request has content PhantomPrompt cannot inspect yet, so nothing was sent. See the format alert in the PhantomPrompt panel",
-	"attachments_not_supported":            "images and file attachments are not supported yet, so nothing was sent",
+	"attachments_not_supported":            "audio and unknown attachments cannot be checked yet, so nothing was sent",
 	"masking_limit":                        "this conversation holds too many protected values. Start a new conversation",
 	"body_limit":                           "the request is larger than PhantomPrompt accepts. Compact the conversation",
 	"invalid_compression":                  "the request body could not be decompressed, so nothing was sent",

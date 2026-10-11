@@ -94,8 +94,17 @@ export function folderName(path) {
   return parts.at(-1) ?? (home ? "~" : "/");
 }
 
-export function tokenOverhead(overhead, input = 0) {
+const PERCENT = new Intl.NumberFormat("en", { maximumSignificantDigits: 2 });
+
+export function tokenShare(tokens, total) {
+  if (total <= 0) return "";
+  const percent = (Math.abs(tokens) / total) * 100;
+  if (percent === 0) return "0%";
+  return percent < 0.001 ? "<0.001%" : `${PERCENT.format(percent)}%`;
+}
+
+export function tokenOverhead(overhead, input = 0, usageOverhead = overhead) {
   if (!overhead) return "—";
-  const share = input > 0 ? ` (${((Math.abs(overhead) / input) * 100).toFixed(1)}% of ${input.toLocaleString()})` : "";
-  return `≈ ${Math.abs(overhead).toLocaleString()} ${overhead > 0 ? "added" : "saved"}${share}`;
+  const share = input > 0 ? ` (${tokenShare(usageOverhead, input)} of ${input.toLocaleString()})` : "";
+  return `≈ ${overhead > 0 ? "−" : "+"}${Math.abs(overhead).toLocaleString()} ${overhead > 0 ? "extra" : "saved"}${share}`;
 }

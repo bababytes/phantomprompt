@@ -100,7 +100,7 @@ function state(item) {
     <p v-if="!sessions.length" id="cli-empty">Nothing is protected yet. <template v-if="terminalLauncher">Click <strong>Open protected terminal</strong> and choose a folder, or in a terminal run</template><template v-else>In a terminal run</template> <code>phantom</code>: everything you start there (claude, codex, copilot, …) is protected.</p>
     <div v-else id="cli-table" class="table-scroll">
       <table>
-        <thead><tr><th>Command</th><th>Folder</th><th>Exceptions</th><th>Status</th><th>Services</th><th>Prompts</th><th>Blocked</th><th>Input tokens from masking (est.)</th><th>Started</th><th>Last activity</th></tr></thead>
+        <thead><tr><th>Command</th><th>Folder</th><th>Exceptions</th><th>Status</th><th>Services</th><th>Prompts</th><th>Blocked</th><th>Tokens from masking (est.)</th><th>Started</th><th>Last activity</th></tr></thead>
         <tbody id="cli-rows">
           <tr v-for="item in sessions" :key="item.started + item.label + item.pid">
             <td class="command">{{ terminalName(item) }}<button v-if="item.pid || item.disconnected" type="button" class="close-terminal" :aria-label="`Close ${terminalName(item)}`" title="Close this terminal" @click="close(item)">×</button></td>
@@ -108,9 +108,9 @@ function state(item) {
             <td class="exceptions"><button v-if="item.folder" type="button" class="secondary compact" :aria-expanded="trustStart === item.folder" :disabled="trusting" :title="`Pick a folder inside ${homePath(item.folder)} whose content is sent without masking, such as test data`" @click="chooseTrusted(item.folder)">Trust a folder…</button></td>
             <td :class="state(item).cls">{{ state(item).text }}</td>
             <td>{{ item.services.length ? item.services.join(", ") : "—" }}</td>
-            <td>{{ item.prompts }}</td>
+            <td :title="`${item.requests ?? 0} AI requests`">{{ item.prompts }}</td>
             <td>{{ item.blocked }}</td>
-            <td>{{ tokenOverhead(item.token_overhead, item.input_tokens) }}</td>
+            <td>{{ tokenOverhead(item.token_overhead, item.input_tokens, item.usage_overhead) }}</td>
             <td>{{ time(item.started) }}</td>
             <td>{{ time(item.last_activity) }}</td>
           </tr>

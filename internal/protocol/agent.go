@@ -18,6 +18,7 @@ type textTarget struct {
 	text    string
 	set     func(string)
 	context bool
+	typed   bool
 	label   string
 	literal bool
 }
@@ -27,7 +28,10 @@ type agentCollector struct {
 	renames []func()
 	after   []func() error
 	context bool
+	typed   bool
+	latest  bool
 	unknown map[string]int
+	sent    int
 }
 
 // Protocol keys never carry user text and must reach the API unchanged.
@@ -76,6 +80,8 @@ func (c *agentCollector) jsonText(holder map[string]any, key string) error {
 
 func (c *agentCollector) mask(session *mask.Session, destination string, public []string) (mask.Counts, error) {
 	var counts mask.Counts
+	var fromContext []string
+	typed := make(map[string]bool)
 	for _, context := range []bool{true, false} {
 		var targets []textTarget
 		var texts []mask.Text
@@ -91,12 +97,27 @@ func (c *agentCollector) mask(session *mask.Session, destination string, public 
 		}
 		for i, target := range targets {
 			target.set(masked[i])
+			if target.typed {
+				for _, token := range mask.Tokens(masked[i]) {
+					typed[token] = true
+				}
+			}
 		}
 		if context {
-			part.ContextKinds = part.NewKinds
+			fromContext = part.NewTokens
 		}
 		counts = counts.Add(part)
 	}
+	for _, token := range counts.NewTokens {
+		switch {
+		case typed[token]:
+			counts.TypedKinds = addKind(counts.TypedKinds, mask.KindKey(token))
+		case slices.Contains(fromContext, token):
+			counts.ContextKinds = addKind(counts.ContextKinds, mask.KindKey(token))
+		}
+	}
+	counts.NewTokens = nil
+	counts.Attachments = c.sent
 	for _, rename := range c.renames {
 		rename()
 	}
@@ -108,13 +129,21 @@ func (c *agentCollector) mask(session *mask.Session, destination string, public 
 	return counts, nil
 }
 
+func addKind(kinds map[string]int, kind string) map[string]int {
+	if kinds == nil {
+		kinds = make(map[string]int)
+	}
+	kinds[kind]++
+	return kinds
+}
+
 func (c *agentCollector) field(holder map[string]any, key string) error {
 	text, ok := holder[key].(string)
 	if !ok {
 		return ErrFormat
 	}
 	context := c.context || strings.HasPrefix(strings.TrimSpace(text), "<system-reminder>")
-	c.targets = append(c.targets, textTarget{text: text, set: func(value string) { holder[key] = value }, context: context})
+	c.targets = append(c.targets, textTarget{text: text, set: func(value string) { holder[key] = value }, context: context, typed: c.typed && !context})
 	return nil
 }
 
@@ -167,16 +196,47 @@ func (c *agentCollector) block(value any) error {
 		c.leaves(block["input"], "", func(updated any) { block["input"] = updated })
 		return nil
 	case "tool_result":
+		typed := c.typed
+		c.typed = false
+		defer func() { c.typed = typed }()
 		return c.content(block, "content")
 	case "thinking", "redacted_thinking":
 		return nil
 	case "tool_addition", "tool_reference":
 		// Tool definitions and references to them, like the top-level tools array; not user content.
 		return nil
-	case "image", "document":
-		return ErrAttachment
+	case "image":
+		c.attachment()
+		return nil
+	case "document":
+		c.attachment()
+		return c.document(block)
 	}
 	return c.unknownBlock(block)
+}
+
+func (c *agentCollector) attachment() {
+	if c.latest {
+		c.sent++
+	}
+}
+
+func (c *agentCollector) document(block map[string]any) error {
+	for _, key := range []string{"title", "context"} {
+		if _, ok := block[key].(string); ok {
+			if err := c.field(block, key); err != nil {
+				return err
+			}
+		}
+	}
+	source, _ := block["source"].(map[string]any)
+	switch source["type"] {
+	case "text":
+		return c.field(source, "data")
+	case "content":
+		return c.content(source, "content")
+	}
+	return nil
 }
 
 // unknownBlock masks a block or item type the adapter does not know yet (any provider) and
@@ -231,13 +291,13 @@ func MaskAgentMessages(data []byte, session *mask.Session, destination string, p
 	if !ok {
 		return nil, mask.Counts{}, ErrFormat
 	}
-	for _, item := range messages {
+	for i, item := range messages {
 		message, ok := item.(map[string]any)
 		role, _ := message["role"].(string)
 		if !ok || !blockType.MatchString(role) {
 			return nil, mask.Counts{}, ErrFormat
 		}
-		c.context = role == "system"
+		c.context, c.typed, c.latest = role == "system", role == "user", i == len(messages)-1
 		if err := c.content(message, "content"); err != nil {
 			return nil, mask.Counts{}, err
 		}

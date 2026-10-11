@@ -57,16 +57,24 @@ func loopbackAddress(address string) bool {
 	return err == nil && port != "" && !strings.ContainsAny(port, "/?#") && ip != nil && ip.IsLoopback()
 }
 
-func OpenCLISession(socket, label string, pid int, folder string) (CLISession, func(), error) {
+func OpenCLISession(socket, label string, pid int, folder, terminal string) (CLISession, func(), error) {
 	client := engineClient(socket)
 	open := func(fields map[string]any) (*http.Response, error) {
 		request, _ := json.Marshal(fields)
 		return client.Post("http://engine/v1/cli/session", "application/json", bytes.NewReader(request))
 	}
-	response, err := open(map[string]any{"label": label, "pid": pid, "folder": folder})
-	if err == nil && response.StatusCode == http.StatusBadRequest {
+	fields := map[string]any{"label": label, "pid": pid, "folder": folder}
+	if terminal != "" {
+		fields["terminal"] = terminal
+	}
+	response, err := open(fields)
+	for _, optional := range []string{"terminal", "folder"} {
+		if _, sent := fields[optional]; !sent || err != nil || response.StatusCode != http.StatusBadRequest {
+			continue
+		}
 		response.Body.Close()
-		response, err = open(map[string]any{"label": label, "pid": pid})
+		delete(fields, optional)
+		response, err = open(fields)
 	}
 	if err != nil {
 		return CLISession{}, func() {}, err
@@ -97,10 +105,10 @@ const (
 	TerminalClosedInPanel
 )
 
-func TouchCLISession(socket, session, label string, pid int, folder string) TerminalState {
+func TouchCLISession(socket, session, label string, pid int, folder, terminal string) TerminalState {
 	client := engineClient(socket)
 	defer client.CloseIdleConnections()
-	body, _ := json.Marshal(map[string]string{"session": session, "label": label, "pid": strconv.Itoa(pid), "folder": folder})
+	body, _ := json.Marshal(map[string]string{"session": session, "label": label, "pid": strconv.Itoa(pid), "folder": folder, "terminal": terminal})
 	response, err := client.Post("http://engine/v1/cli/touch", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return TerminalConnected

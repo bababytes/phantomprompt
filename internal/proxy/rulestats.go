@@ -143,6 +143,6 @@ func (a *App) ruleUses(counts mask.Counts) map[string]RuleUse {
 
 func (a *App) setMatches(event *Event, counts mask.Counts) {
 	event.Rules = a.ruleUses(counts)
-	counts.RuleHits, counts.RuleNew, counts.RulePreviews = nil, nil, nil
+	counts.RuleHits, counts.RuleNew, counts.RulePreviews, counts.NewTokens = nil, nil, nil, nil
 	event.Matches = counts
 }

@@ -419,12 +419,16 @@ func protectedProcess(binary string, args []string, openPanel bool, notice banne
 		}
 	}
 	folder, _ := os.Getwd()
-	session, closeSession, err := extension.OpenCLISession(socket, label, os.Getpid(), folder)
+	terminal := os.Getenv("PHANTOMPROMPT_TERMINAL")
+	session, closeSession, err := extension.OpenCLISession(socket, label, os.Getpid(), folder, terminal)
 	if errors.Is(err, extension.ErrOutdatedEngine) {
 		return errors.New("the running PhantomPrompt is outdated; restart it with: phantomprompt kill")
 	}
 	if err != nil {
 		return errors.New("PhantomPrompt could not start a masking session")
+	}
+	if terminal == "" {
+		extraEnv = append(extraEnv, "PHANTOMPROMPT_TERMINAL="+session.ID)
 	}
 	agent := filepath.Base(binary)
 	gateway := settings.Gateway
@@ -504,7 +508,7 @@ func protectedProcess(binary string, args []string, openPanel bool, notice banne
 		for {
 			select {
 			case <-keepalive.C:
-				switch extension.TouchCLISession(socket, session.ID, label, os.Getpid(), folder) {
+				switch extension.TouchCLISession(socket, session.ID, label, os.Getpid(), folder, terminal) {
 				case extension.TerminalClosedInPanel:
 					closedInPanel.Store(true)
 					endProcess(command.Process)

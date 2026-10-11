@@ -32,6 +32,7 @@ type Event struct {
 	Repeats     int                `json:"repeats,omitempty"`
 	Unrestored  int                `json:"unrestored,omitempty"`
 	Requests    int                `json:"requests,omitempty"`
+	AIErrors    int                `json:"ai_errors,omitempty"`
 	Folder      string             `json:"folder,omitempty"`
 	Rules       map[string]RuleUse `json:"rules,omitempty"`
 }
@@ -120,6 +121,12 @@ func (p *promptChecks) time(overheadMS float64) {
 	defer p.mu.Unlock()
 	p.timed++
 	p.overheadMS += overheadMS
+}
+
+func (p *promptChecks) reset() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.checked, p.sensitive, p.timed, p.overheadMS = 0, 0, 0, 0
 }
 
 func (p *promptChecks) Snapshot() PromptStats {

@@ -18,6 +18,7 @@ export function valueRows(events, services) {
     const unique = event.matches.new_kinds;
     if (!unique) continue;
     const context = event.matches.context_kinds ?? {};
+    const typed = event.matches.typed_kinds ?? {};
     const byRules = { custom: 0, secret: 0 };
     for (const [name, use] of Object.entries(event.rules ?? {})) {
       byRules[use.secret ? "secret" : "custom"] += use.values;
@@ -25,7 +26,10 @@ export function valueRows(events, services) {
     }
     for (const [kind, total] of Object.entries(unique)) {
       if (kind === "fields" || kind === "file") continue;
-      add(`kind:${kind}`, KINDS[kind] ?? kind, "type", total - (context[kind] ?? 0) - (byRules[kind] ?? 0), event);
+      const own = total - (context[kind] ?? 0) - (byRules[kind] ?? 0);
+      const yours = Math.min(typed[kind] ?? 0, own);
+      add(`kind:${kind}:typed`, KINDS[kind] ?? kind, "typed by you", yours, event);
+      add(`kind:${kind}:found`, KINDS[kind] ?? kind, "found by AI", own - yours, event);
     }
     let contextFields = context.fields ?? 0;
     for (const [name, total] of Object.entries(event.matches.new_field_names ?? {})) {

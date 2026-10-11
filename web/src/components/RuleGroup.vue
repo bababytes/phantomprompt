@@ -6,8 +6,9 @@ defineProps({
   title: { type: String, required: true },
   description: { type: String, default: "" },
   status: { type: String, default: "On" },
+  switchable: { type: Boolean, default: true },
 });
-const enabled = defineModel("enabled", { type: Boolean, required: true });
+const enabled = defineModel("enabled", { type: Boolean, default: true });
 const open = defineModel("open", { type: Boolean, default: false });
 const emit = defineEmits(["change"]);
 
@@ -25,7 +26,7 @@ function toggle(event) {
         <span class="group-text"><strong>{{ title }}</strong><small>{{ description }}</small></span>
       </button>
       <span class="group-status">{{ enabled ? status : "Off" }}</span>
-      <label class="switch group-switch"><input :id="id" type="checkbox" :checked="enabled" :disabled="workspace.working" @change="toggle"><span class="sr-only">Mask {{ title }}</span></label>
+      <label v-if="switchable" class="switch group-switch"><input :id="id" type="checkbox" :checked="enabled" :disabled="workspace.working" @change="toggle"><span class="sr-only">Mask {{ title }}</span></label>
     </div>
     <div v-show="open" :id="`${id}-body`" class="group-body"><slot /></div>
   </section>

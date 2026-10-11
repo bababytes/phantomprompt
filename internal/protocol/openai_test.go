@@ -53,7 +53,7 @@ func TestMaskOpenAIChat(t *testing.T) {
 		body string
 		want error
 	}{
-		{`{"messages":[{"role":"user","content":[{"type":"image_url","image_url":{"url":"x"}}]}]}`, ErrAttachment},
+		{`{"messages":[{"role":"user","content":[{"type":"input_audio","input_audio":{"data":"x"}}]}]}`, ErrAttachment},
 		{`{"messages":[{"role":"user","content":[{"type":"Bad Type","text":"x"}]}]}`, ErrFormat},
 		{`{"messages":[{"role":5,"content":"x"}]}`, ErrFormat},
 		{`{"input":"x"}`, ErrFormat},
@@ -83,7 +83,7 @@ func TestMaskOpenAIResponses(t *testing.T) {
 	if out, _, err := MaskOpenAIResponses([]byte(`{"input":"plain `+vin+`"}`), s, "", nil); err != nil || strings.Contains(string(out), vin) {
 		t.Fatalf("string input: %s %v", out, err)
 	}
-	for _, bad := range []string{`{"input":[{"type":"Web Search"}]}`, `{"input":[{"role":"user","content":[{"type":"input_image","image_url":"x"}]}]}`, `{"model":"x"}`} {
+	for _, bad := range []string{`{"input":[{"type":"Web Search"}]}`, `{"input":[{"role":"user","content":[{"type":"input_audio","input_audio":{"data":"x"}}]}]}`, `{"model":"x"}`} {
 		if _, _, err := MaskOpenAIResponses([]byte(bad), agentSession(), "", nil); err == nil {
 			t.Fatalf("accepted %s", bad)
 		}

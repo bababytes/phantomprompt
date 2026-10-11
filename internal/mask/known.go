@@ -18,6 +18,10 @@ const wholeWordBelow = 8
 // so they would not be found again when a client re-sends them without that context.
 var contextKinds = map[string]bool{"FIELD": true, "SECRET": true, "CUSTOM": true, "FILE": true}
 
+func Tokens(text string) []string { return tokenPattern.FindAllString(text, -1) }
+
+func KindKey(token string) string { return kindKeys[tokenKind(token)] }
+
 func tokenKind(token string) string {
 	kind, _, _ := strings.Cut(strings.TrimPrefix(token, Prefix), "_")
 	return kind

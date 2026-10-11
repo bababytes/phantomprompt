@@ -19,6 +19,9 @@ func logEvent(log *applog.Log, event Event) {
 	if event.Unrestored > 0 {
 		attrs = append(attrs, slog.Int("unrestored", event.Unrestored))
 	}
+	if event.Matches.Attachments > 0 {
+		attrs = append(attrs, slog.Int("attachments", event.Matches.Attachments))
+	}
 	if event.Folder != "" {
 		attrs = append(attrs, slog.String("folder", event.Folder))
 	}
@@ -41,6 +44,8 @@ func eventImportance(event Event) (slog.Level, string, bool) {
 		return slog.LevelWarn, "placeholders not restored", true
 	case event.Reason == "secret_kept_masked_in_tool":
 		return slog.LevelWarn, "secret kept masked in a tool call", true
+	case event.Matches.Attachments > 0:
+		return slog.LevelWarn, "image or file sent without checking", true
 	}
 	return 0, "", false
 }

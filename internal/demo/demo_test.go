@@ -394,6 +394,15 @@ func TestLiveRulesEndpoint(t *testing.T) {
 	if request(http.MethodPut, "/api/rules", `{"vin":true,"trusted_paths":[]}`, access).Code != 200 || len(app.Policy().TrustedPaths) != 0 {
 		t.Fatalf("a panel that sends trusted folders could not clear them: %v", app.Policy().TrustedPaths)
 	}
+	if code := request(http.MethodPut, "/api/rules", `{"custom_rules":[{"pattern":"ORION"}],"custom_off":true}`, access).Code; code != 400 {
+		t.Fatalf("switched-off custom rules accepted as the only detector: %d", code)
+	}
+	if request(http.MethodPut, "/api/rules", `{"vin":true,"custom_rules":[{"pattern":"ORION"}],"custom_off":true}`, access).Code != 200 {
+		t.Fatal("custom rules could not be switched off")
+	}
+	if saved, _, err := proxy.LoadRules(rules); err != nil || !saved.CustomOff || len(saved.CustomRules) != 1 {
+		t.Fatalf("switched-off custom rules were not saved with their patterns: %+v %v", saved, err)
+	}
 }
 
 func TestPanelRequiresOneTimeLogin(t *testing.T) {

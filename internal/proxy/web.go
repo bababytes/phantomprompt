@@ -66,6 +66,7 @@ var rejectedDomains = []string{"content-push.googleapis.com", "sentry.io"}
 type Integration struct {
 	Service   string     `json:"service"`
 	Protected bool       `json:"protected"`
+	Prompts   uint64     `json:"prompts"`
 	Requests  uint64     `json:"requests"`
 	Blocked   uint64     `json:"blocked"`
 	LastSeen  *time.Time `json:"last_seen,omitempty"`
@@ -90,6 +91,14 @@ func (d *detections) record(service string, protected bool, update func(*Integra
 	now := time.Now().UTC()
 	item.LastSeen = &now
 	update(item)
+}
+
+func (d *detections) resetCounters() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	for _, item := range d.items {
+		item.Prompts, item.Requests, item.Blocked = 0, 0, 0
+	}
 }
 
 func (a *App) Integrations() []Integration {

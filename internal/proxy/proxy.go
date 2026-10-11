@@ -64,7 +64,13 @@ type App struct {
 	MaskedSecret   atomic.Uint64
 	MaskedFile     atomic.Uint64
 	MaskedNew      atomic.Uint64
+	MaskedTyped    atomic.Uint64
+	MaskedContext  atomic.Uint64
+	PromptsSent    atomic.Uint64
 	TokenOverhead  atomic.Int64
+	InputTokens    atomic.Int64
+	UsageOverhead  atomic.Int64
+	resets         atomic.Uint64
 	Events         Events
 	stop           chan struct{}
 	once           sync.Once
@@ -582,7 +588,7 @@ func (a *App) logPrompt(event Event) uint64 {
 }
 
 func (a *App) keepPrompt(event Event) uint64 {
-	if event.Matches.New == 0 && event.Status < 400 {
+	if event.Matches.New == 0 && event.Matches.Attachments == 0 && event.Status < 400 {
 		return 0
 	}
 	return a.Events.keep(event)
@@ -604,8 +610,43 @@ func (a *App) recordMasked(counts mask.Counts) {
 	a.MaskedSecret.Add(uint64(counts.Secret))
 	a.MaskedFile.Add(uint64(counts.File))
 	a.MaskedNew.Add(uint64(counts.New))
+	a.MaskedTyped.Add(uint64(sum(counts.TypedKinds)))
+	a.MaskedContext.Add(uint64(sum(counts.ContextKinds)))
 	a.TokenOverhead.Add(int64(counts.TokenOverhead))
 	a.customRules.record(counts)
+}
+
+func sum(counts map[string]int) int {
+	total := 0
+	for _, n := range counts {
+		total += n
+	}
+	return total
+}
+
+func (a *App) resetTotals() {
+	for _, counter := range []*atomic.Uint64{&a.Forwarded, &a.Blocked, &a.MaskedVIN, &a.MaskedPESEL, &a.MaskedEmail, &a.MaskedGUID, &a.MaskedFields, &a.MaskedCustom, &a.MaskedSecret, &a.MaskedFile, &a.MaskedNew, &a.MaskedTyped, &a.MaskedContext, &a.PromptsSent} {
+		counter.Store(0)
+	}
+	for _, counter := range []*atomic.Int64{&a.TokenOverhead, &a.InputTokens, &a.UsageOverhead} {
+		counter.Store(0)
+	}
+	a.cliSessions.resetCounters()
+	a.checks.reset()
+	a.detected.resetCounters()
+	a.resets.Add(1)
+}
+
+func (a *App) recordInputTokens(session, service string, tokens, overhead int, period uint64) {
+	if tokens <= 0 || period != a.resets.Load() {
+		return
+	}
+	a.InputTokens.Add(int64(tokens))
+	a.UsageOverhead.Add(int64(overhead))
+	a.cliSessions.record(session, service, func(s *CLISession) {
+		s.InputTokens += int64(tokens)
+		s.UsageOverhead += int64(overhead)
+	})
 }
 
 type managedBody struct {

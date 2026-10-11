@@ -58,8 +58,10 @@ type Counts struct {
 	NewKinds       map[string]int `json:"new_kinds,omitempty"`
 	NewFields      map[string]int `json:"new_field_names,omitempty"`
 	ContextKinds   map[string]int `json:"context_kinds,omitempty"`
+	TypedKinds     map[string]int `json:"typed_kinds,omitempty"`
 	UnknownBlocks  map[string]int `json:"unknown_blocks,omitempty"`
 	BlockedTexts   int            `json:"blocked_texts,omitempty"`
+	Attachments    int            `json:"attachments,omitempty"`
 	MaskedFolders  map[string]int `json:"masked_folders,omitempty"`
 	BlockedFolders map[string]int `json:"blocked_folders,omitempty"`
 	// RuleHits and RuleNew count matches and new values per custom regex. They are never
@@ -68,6 +70,7 @@ type Counts struct {
 	RuleNew  map[string]int `json:"-"`
 	// RulePreviews holds partly hidden new values per custom regex, for the rule history.
 	RulePreviews map[string][]string `json:"-"`
+	NewTokens    []string            `json:"-"`
 }
 
 var kindKeys = map[string]string{"VIN": "vin", "PESEL": "pesel", "EMAIL": "email", "GUID": "guid", "CUSTOM": "custom", "SECRET": "secret", "FILE": "file", "FIELD": "fields"}
@@ -107,8 +110,11 @@ func (c Counts) Add(other Counts) Counts {
 	c.NewKinds = addCounts(addCounts(nil, c.NewKinds), other.NewKinds)
 	c.NewFields = addCounts(addCounts(nil, c.NewFields), other.NewFields)
 	c.ContextKinds = addCounts(addCounts(nil, c.ContextKinds), other.ContextKinds)
+	c.TypedKinds = addCounts(addCounts(nil, c.TypedKinds), other.TypedKinds)
+	c.NewTokens = append(slices.Clip(c.NewTokens), other.NewTokens...)
 	c.UnknownBlocks = addCounts(addCounts(nil, c.UnknownBlocks), other.UnknownBlocks)
 	c.BlockedTexts += other.BlockedTexts
+	c.Attachments += other.Attachments
 	c.RuleHits = addCounts(addCounts(nil, c.RuleHits), other.RuleHits)
 	c.RuleNew = addCounts(addCounts(nil, c.RuleNew), other.RuleNew)
 	c.RulePreviews = addPreviews(addPreviews(nil, c.RulePreviews), other.RulePreviews)
@@ -118,7 +124,7 @@ func (c Counts) Add(other Counts) Counts {
 }
 
 func (c Counts) repeated() Counts {
-	c.New, c.NewKinds, c.NewFields, c.RuleNew, c.RulePreviews, c.MaskedFolders = 0, nil, nil, nil, nil, nil
+	c.New, c.NewKinds, c.NewFields, c.RuleNew, c.RulePreviews, c.MaskedFolders, c.NewTokens = 0, nil, nil, nil, nil, nil, nil
 	return c
 }
 
@@ -142,7 +148,9 @@ type Policy struct {
 	// DisabledSecrets lists the IDs of built-in secret patterns that are switched off.
 	DisabledSecrets []string    `json:"disabled_secrets,omitempty"`
 	CustomRules     []RegexRule `json:"custom_rules,omitempty"`
-	ProtectedPaths  []string    `json:"protected_paths,omitempty"`
+	// CustomOff switches CustomRules off without deleting them; when omitted they are on.
+	CustomOff      bool     `json:"custom_off,omitempty"`
+	ProtectedPaths []string `json:"protected_paths,omitempty"`
 	// BlockedPaths is the subset of ProtectedPaths whose content is removed instead of masked.
 	BlockedPaths []string `json:"blocked_paths,omitempty"`
 	// TrustedPaths are folders whose content is sent unmasked, such as test fixtures with fake data.
@@ -177,7 +185,7 @@ func ValidatePolicy(policy Policy) error {
 			return ErrPaths
 		}
 	}
-	if !policy.VIN && !policy.PESEL && !policy.Email && !policy.Fields && !policy.GUID && !policy.Secrets && len(policy.CustomRules) == 0 && len(policy.ProtectedPaths) == 0 {
+	if !policy.VIN && !policy.PESEL && !policy.Email && !policy.Fields && !policy.GUID && !policy.Secrets && (len(policy.CustomRules) == 0 || policy.CustomOff) && len(policy.ProtectedPaths) == 0 {
 		return ErrSession
 	}
 	return nil
@@ -280,8 +288,12 @@ func (s *Session) apply(policy Policy) error {
 	if err != nil {
 		return err
 	}
-	if s.regex, err = CompileRules(policy.CustomRules); err != nil {
+	regex, err := CompileRules(policy.CustomRules)
+	if err != nil {
 		return err
+	}
+	if !policy.CustomOff {
+		s.regex = regex
 	}
 	if policy.Fields {
 		s.fields = names
@@ -397,6 +409,7 @@ func (s *Session) MaskTexts(destination string, texts []Text, public []string) (
 	second.counts.RuleNew = addCounts(addCounts(nil, first.counts.RuleNew), second.counts.RuleNew)
 	second.counts.RulePreviews = addPreviews(addPreviews(nil, first.counts.RulePreviews), second.counts.RulePreviews)
 	second.counts.MaskedFolders = addCounts(addCounts(nil, first.counts.MaskedFolders), second.counts.MaskedFolders)
+	second.counts.NewTokens = append(slices.Clip(first.counts.NewTokens), second.counts.NewTokens...)
 	second.counts.BlockedFolders = addCounts(addCounts(nil, first.counts.BlockedFolders), second.counts.BlockedFolders)
 	return second.out, second.counts, nil
 }
@@ -507,6 +520,7 @@ func (s *Session) maskPass(destination string, texts []Text, public []string) (*
 					p.learnedContext = p.learnedContext || learnable(m.Kind, m.Rule, value)
 					part.New++
 					part.NewKinds = addCounts(part.NewKinds, map[string]int{kindKeys[m.Kind]: 1})
+					part.NewTokens = append(part.NewTokens, token)
 					if m.Kind == "FIELD" {
 						part.NewFields = addCounts(part.NewFields, map[string]int{s.fieldLabel(m.Name): 1})
 					}

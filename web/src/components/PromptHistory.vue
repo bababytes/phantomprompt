@@ -55,18 +55,18 @@ const seenAt = reactive({ field: 0, prompt: 0, rule: 0 });
 let baselined = false;
 const sort = reactive({ key: "time", dir: "desc" });
 const COLUMNS = [
-  { key: "time", label: "Time" },
-  { key: "service", label: "Service" },
-  { key: "masked", label: "Masked values" },
-  { key: "protection", label: "Protection time" },
-  { key: "status", label: "Status" },
+  { key: "time", label: "Time", hint: "When the prompt was sent." },
+  { key: "service", label: "Service", hint: "AI tool that sent the prompt, with its project folder." },
+  { key: "masked", label: "Masked values", hint: "New values per type, split by source: typed by you, found by AI, or added by the tool itself. Folders show blocked or masked access." },
+  { key: "protection", label: "Protection time", hint: "Time PhantomPrompt added to mask the prompt and restore the reply." },
+  { key: "status", label: "Status", hint: "Result: protected, blocked, failed, or a warning to check. Click the row for details." },
 ];
 
 const summary = computed(() => {
-  const prompts = monitor.totals.prompts;
-  return prompts?.checked
-    ? `Checked ${prompts.checked} prompt(s), ${prompts.sensitive} with protected values · average PhantomPrompt overhead ${prompts.average_overhead_ms.toFixed(2)} ms per prompt.`
-    : "No prompts checked yet.";
+  const requests = monitor.totals.prompts;
+  return requests?.checked
+    ? `${monitor.totals.prompts_sent ?? 0} prompt(s) sent in ${requests.checked} AI request(s) · average PhantomPrompt overhead ${requests.average_overhead_ms.toFixed(2)} ms per request.`
+    : "No prompts yet.";
 });
 
 const unrestored = computed(() => monitor.events.reduce((sum, event) => sum + (event.unrestored ?? 0), 0));
@@ -75,7 +75,7 @@ const historyStatus = computed(() => {
   if (monitor.error) return monitor.error;
   if (!monitor.updated) return "Loading prompt history…";
   const warning = unrestored.value ? `⚠ Replies kept ${unrestored.value} placeholder(s) that were not restored; see By prompt. ` : "";
-  return warning + (monitor.events.length ? `${monitor.events.length} prompt(s) with protected values or blocks. Click a row for details. Updated ${monitor.updated.toLocaleTimeString()}.` : "Nothing to show: no prompt contained protected values and nothing was blocked.");
+  return warning + (monitor.events.length ? `${monitor.events.length} prompt(s) with protected values, blocks or AI service errors. Click a row for details. Updated ${monitor.updated.toLocaleTimeString()}.` : "Nothing to show: no prompt contained protected values and nothing was blocked.");
 });
 
 const activity = computed(() => ({
@@ -103,36 +103,32 @@ function channel(event) {
 }
 
 function statusInfo(event) {
+  if (event.reason === "passed_without_restore") return { text: event.status >= 400 ? `AI service answered ${event.status} · passed to the tool` : "Sent · reply not restored", cls: "status-warn" };
   if (event.status >= 400) {
     const label = RESULTS[event.reason] ?? `Blocked · ${event.reason}`;
     const text = label.startsWith("Blocked") || label.startsWith("Failed") ? label : `Blocked · ${label}`;
     return { text: event.repeats ? `${text} ×${event.repeats + 1}` : text, cls: "status-block" };
   }
-  if (event.reason === "passed_without_restore") return { text: "Sent · reply not restored", cls: "status-warn" };
   if (event.unrestored > 0) return { text: `⚠ ${event.unrestored} placeholder(s) not restored in the reply`, cls: "status-warn" };
+  if (event.matches.attachments > 0) return { text: `⚠ ${event.matches.attachments} image(s) or file(s) sent without checking`, cls: "status-warn" };
   const blockedFolders = Object.keys(event.matches.blocked_folders ?? {});
   if (blockedFolders.length) return { text: `🚫 Folder access blocked (${blockedFolders.join(", ")})`, cls: "status-secret" };
   if ((event.matches.secret ?? 0) > 0) return { text: `🔒 Password/secret masked (${event.matches.secret})`, cls: "status-secret" };
   return { text: "Protected", cls: "status-ok" };
 }
 
-function ruleValues(event, secret) {
-  return Object.values(event.rules ?? {}).filter((use) => Boolean(use.secret) === secret).reduce((sum, use) => sum + use.values, 0);
+function kindList(kinds) {
+  return Object.entries(kinds).filter(([kind, count]) => COUNT_LABELS[kind] && count > 0).map(([kind, count]) => `${COUNT_LABELS[kind]} ${count}`).join(", ");
 }
 
 function maskedValues(event) {
   const unique = event.matches.new_kinds;
+  if (!unique) return [...folderAccess(event), kindList(event.matches)].filter(Boolean).join(" · ") || "—";
+  const typed = event.matches.typed_kinds ?? {};
   const context = event.matches.context_kinds ?? {};
-  const own = { ...(unique ? Object.fromEntries(Object.entries(unique).map(([kind, n]) => [kind, n - (context[kind] ?? 0)])) : event.matches) };
-  own.custom = (own.custom ?? 0) - ruleValues(event, false);
-  own.secret = (own.secret ?? 0) - ruleValues(event, true);
-  const kinds = Object.entries(own).filter(([kind, count]) => COUNT_LABELS[kind] && count > 0);
-  const named = Object.entries((unique ? event.matches.new_field_names : event.matches.field_names) ?? {});
-  const rules = Object.entries(event.rules ?? {}).filter(([, use]) => use.values > 0).map(([name, use]) => `${name} ${use.values}`);
-  const parts = [...kinds.flatMap(([kind, count]) => (kind === "fields" && named.length ? named.map(([name, n]) => `${name} ${n}`) : [`${COUNT_LABELS[kind]} ${count}`])), ...rules];
-  const fromContext = Object.entries(context).filter(([kind]) => kind !== "file").reduce((sum, [, n]) => sum + n, 0);
-  if (fromContext) parts.push(`+${fromContext} from tool context`);
-  return [...folderAccess(event), ...parts].join(" · ") || "—";
+  const found = Object.fromEntries(Object.entries(unique).map(([kind, n]) => [kind, n - (typed[kind] ?? 0) - (context[kind] ?? 0)]));
+  const sources = [["you", typed], ["found by AI", found], [SERVICES[event.adapter] ?? "tool", context]].map(([source, kinds]) => [source, kindList(kinds)]).filter(([, list]) => list);
+  return [...folderAccess(event), ...sources.map(([source, list]) => `${source}: ${list}`)].join(" · ") || "—";
 }
 
 function folderAccess(event) {
@@ -151,11 +147,13 @@ function details(event) {
     aiTime ? `AI response: ${aiTime}` : null,
     event.route ? `Route: ${event.route}` : null,
     event.requests > 1 ? `Model calls in this turn: ${event.requests}` : null,
+    event.ai_errors ? `AI service errors passed to the tool, e.g. rate limit 429: ${event.ai_errors}` : null,
+    event.matches.attachments ? `Images or files sent to the AI without checking: ${event.matches.attachments}` : null,
     event.unrestored ? `Placeholders left in the reply (changed by the model or not restored): ${event.unrestored}` : null,
     event.rules ? `Rules that matched: ${Object.entries(event.rules).map(([name, use]) => `${name} (${use.values} value${use.values === 1 ? "" : "s"}, ${use.hits} match${use.hits === 1 ? "" : "es"}${use.secret ? ", secret" : ""})`).join(", ")}` : null,
     folderAccess(event).length ? `Protected folders: ${folderAccess(event).join(", ")} (folder content is not logged)` : null,
     event.matches.context_kinds ? `From the tool's own context (system prompt, reminders): ${Object.entries(event.matches.context_kinds).map(([kind, n]) => `${COUNT_LABELS[kind] ?? kind} ${n}`).join(", ")}` : null,
-    event.matches.token_overhead ? `Input tokens from masking (net estimate) ${tokenOverhead(event.matches.token_overhead, event.input_tokens)}` : null,
+    event.matches.token_overhead ? `Tokens from masking (net estimate) ${tokenOverhead(event.matches.token_overhead, event.input_tokens)}` : null,
     event.input_tokens ? `Input tokens reported by the AI service: ${event.input_tokens.toLocaleString()}` : null,
     `Input → masked: ${event.input_bytes} → ${event.masked_bytes} B`,
   ].filter(Boolean).join("  ·  ");
@@ -221,13 +219,14 @@ async function openLogFolder() {
       <div><p class="eyebrow">PROMPT HISTORY</p><h2>Protected values</h2></div>
       <div><button id="refresh-events" class="secondary" @click="refresh">Refresh</button><button id="clear-events" class="secondary" @click="clearEvents">Clear history</button></div>
     </div>
-    <p>What PhantomPrompt protected, per field, per prompt or per rule. Only metadata is kept, without prompt text, original values, credentials or session IDs: the last 200 entries here in RAM; errors, blocked requests and protection changes also go to the daily log; rule matches appear partly hidden.</p>
+    <p>What PhantomPrompt protected, per field, per prompt or per rule. Only metadata is kept, without prompt text, original values, credentials or session IDs: the last 200 entries here in RAM; errors, blocked requests and protection changes also go to the daily log.</p>
     <details class="history-help">
       <summary>How to read this</summary>
       <p><strong>By field</strong>: one row per protected value type or field; the counter shows how many different values from your data were protected. Protected folders appear as one row each, with the number of times an AI reached for them and whether it was blocked or masked; what the folder contains is never shown.</p>
       <p><strong>By prompt</strong>: one row per question, with all model calls of that question merged; click a row for timing and token details. Values the AI tool adds itself (system prompt, reminders) are counted separately as tool context.</p>
       <p>A list opens when you click its button and closes on a second click. A small green number on a button counts entries with new catches since you last opened that list.</p>
-      <p><strong>By rule</strong>: one row per masking rule that has caught something, your own or a built-in secret pattern, with how many times it matched, how many different values it caught and when it last fired. Caught values appear partly hidden; secrets are hidden completely. Examples live only in RAM and disappear with Clear history.</p>
+      <p><strong>By rule</strong>: one row per masking rule that has caught something, your own or a built-in secret pattern, with how many times it matched, how many different values it caught and when it last fired.</p>
+      <p>Hover a column title for a short explanation of what it shows.</p>
     </details>
     <details v-if="monitor.totals.log_folder" id="log-folder" class="history-help">
       <summary>Log folder</summary>
@@ -256,7 +255,7 @@ async function openLogFolder() {
         <thead>
           <tr>
             <th v-for="column in COLUMNS" :key="column.key" :aria-sort="sort.key === column.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'">
-              <button class="sort-button" @click="sortBy(column.key)">{{ column.label }}<span aria-hidden="true">{{ sort.key === column.key ? (sort.dir === "asc" ? " ▲" : " ▼") : "" }}</span></button>
+              <button class="sort-button" :title="column.hint" @click="sortBy(column.key)">{{ column.label }}<span aria-hidden="true">{{ sort.key === column.key ? (sort.dir === "asc" ? " ▲" : " ▼") : "" }}</span></button>
             </th>
           </tr>
         </thead>

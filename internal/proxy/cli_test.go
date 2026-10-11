@@ -339,9 +339,9 @@ func TestCopilotThroughProxy(t *testing.T) {
 			header http.Header
 			status int
 		}{
-			{"/chat/completions", []byte(`{"messages":[{"role":"user","content":[{"type":"image_url","image_url":{"url":"x"}}]}]}`), nil, 422},
-			{"/responses", []byte(`{"input":[{"role":"user","content":[{"type":"input_image","image_url":"x"}]}]}`), nil, 422},
-			{"/v1/messages", []byte(`{"messages":[{"role":"user","content":[{"type":"image","source":{}}]}]}`), nil, 422},
+			{"/chat/completions", []byte(`{"messages":[{"role":"user","content":[{"type":"input_audio","input_audio":{"data":"x"}}]}]}`), nil, 422},
+			{"/responses", []byte(`{"input":[{"role":"user","content":[{"type":"input_audio","input_audio":{"data":"x"}}]}]}`), nil, 422},
+			{"/v1/messages", []byte(`{"messages":[{"role":"user","content":[{"type":"future_audio","source":{}}]}]}`), nil, 422},
 			{"/v1/messages", []byte(`{"input":"x"}`), http.Header{"Upgrade": {"websocket"}, "Connection": {"Upgrade"}}, 403},
 		} {
 			if response, _ := call(http.MethodPost, api+tc.path, tc.body, tc.header); response.StatusCode != tc.status {
@@ -369,8 +369,11 @@ func TestCopilotThroughProxy(t *testing.T) {
 		t.Fatalf("prompt statistics %+v", stats)
 	}
 	sessions := app.CLISessions()
-	if len(sessions) != 1 || sessions[0].Label != "copilot" || sessions[0].PID != 4242 || !sessions[0].Active || sessions[0].Prompts != 5 || sessions[0].Masked != 2 || sessions[0].Blocked < 3 || len(sessions[0].Services) != 1 || sessions[0].Services[0] != "GitHub Copilot CLI" || sessions[0].InputTokens != 550 || sessions[0].TokenOverhead == 0 {
+	if len(sessions) != 1 || sessions[0].Label != "copilot" || sessions[0].PID != 4242 || !sessions[0].Active || sessions[0].Requests != 5 || sessions[0].Masked != 2 || sessions[0].Blocked < 3 || len(sessions[0].Services) != 1 || sessions[0].Services[0] != "GitHub Copilot CLI" || sessions[0].InputTokens != 550 || sessions[0].TokenOverhead == 0 {
 		t.Fatalf("CLI sessions %+v", sessions)
+	}
+	if app.InputTokens.Load() != sessions[0].InputTokens || app.UsageOverhead.Load() != app.TokenOverhead.Load() || sessions[0].UsageOverhead != app.UsageOverhead.Load() {
+		t.Fatalf("input tokens %d, terminal %d; overhead with reported usage %d of %d", app.InputTokens.Load(), sessions[0].InputTokens, app.UsageOverhead.Load(), app.TokenOverhead.Load())
 	}
 	integrations := app.Integrations()
 	if len(integrations) != 1 || integrations[0].Service != "GitHub Copilot CLI" || !integrations[0].Protected || integrations[0].Requests != 5 {

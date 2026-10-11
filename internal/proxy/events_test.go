@@ -113,11 +113,11 @@ func TestSnapshotsAreIndependentOfTheHistory(t *testing.T) {
 			Matches: mask.Counts{New: 1, NewKinds: map[string]int{"custom": 1}, FieldNames: map[string]int{"codename": 1}},
 			Rules:   map[string]RuleUse{"rule-a": {Values: 1, Hits: 1}}}
 	}
-	app.logTurn(event(), "s1", "p1", true)
+	app.logTurn(event(), "s1", turnSignal{prompt: "p1", newTurn: true})
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		for range 300 {
-			app.logTurn(event(), "s1", "p1", false)
+			app.logTurn(event(), "s1", turnSignal{prompt: "p1"})
 		}
 	})
 	wg.Go(func() {

@@ -106,11 +106,11 @@ func TestOpenCLISessionSendsLabelAndReturnsSecret(t *testing.T) {
 			closed <- body["session"]
 		}
 	})
-	session, closeSession, err := OpenCLISession(socket, "claude", 4242, "/work/project")
+	session, closeSession, err := OpenCLISession(socket, "claude", 4242, "/work/project", "fedcba9876543210fedcba9876543210")
 	if err != nil || session.ID != "0123456789abcdef0123456789abcdef" || session.Secret != "synthetic-secret" {
 		t.Fatalf("session %+v err %v", session, err)
 	}
-	if received["label"] != "claude" || received["pid"] != float64(4242) || received["folder"] != "/work/project" {
+	if received["label"] != "claude" || received["pid"] != float64(4242) || received["folder"] != "/work/project" || received["terminal"] != "fedcba9876543210fedcba9876543210" {
 		t.Fatalf("engine received %v", received)
 	}
 	closeSession()
@@ -127,7 +127,7 @@ func TestOutdatedEngineIsReported(t *testing.T) {
 		}
 		http.NotFound(w, r)
 	})
-	if _, _, err := OpenCLISession(socket, "claude", 1, "/work"); !errors.Is(err, ErrOutdatedEngine) {
+	if _, _, err := OpenCLISession(socket, "claude", 1, "/work", ""); !errors.Is(err, ErrOutdatedEngine) {
 		t.Fatalf("session without secret: %v", err)
 	}
 	if _, err := PanelURL(socket); !errors.Is(err, ErrOutdatedEngine) {
@@ -159,9 +159,44 @@ func TestOpenCLISessionRetriesWithoutFolderOnOlderEngine(t *testing.T) {
 		}
 		json.NewEncoder(w).Encode(map[string]string{"session": "0123456789abcdef0123456789abcdef", "secret": "s"})
 	})
-	session, _, err := OpenCLISession(socket, "claude", 1, "/work")
+	session, _, err := OpenCLISession(socket, "claude", 1, "/work", "")
 	if err != nil || session.Secret != "s" || len(bodies) != 2 {
 		t.Fatalf("session %+v err %v bodies %v", session, err, bodies)
+	}
+}
+
+func TestOpenCLISessionKeepsTheFolderOnAnEngineWithoutTerminals(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		rejected []string
+		sent     int
+		kept     []string
+	}{
+		{"terminals unknown", []string{"terminal"}, 2, []string{"folder"}},
+		{"folders and terminals unknown", []string{"terminal", "folder"}, 3, nil},
+	} {
+		var bodies []map[string]any
+		socket := fakeEngine(t, func(w http.ResponseWriter, r *http.Request) {
+			var body map[string]any
+			json.NewDecoder(r.Body).Decode(&body)
+			bodies = append(bodies, body)
+			for _, field := range tc.rejected {
+				if _, sent := body[field]; sent {
+					http.Error(w, "Invalid extension request", http.StatusBadRequest)
+					return
+				}
+			}
+			json.NewEncoder(w).Encode(map[string]string{"session": "0123456789abcdef0123456789abcdef", "secret": "s"})
+		})
+		session, _, err := OpenCLISession(socket, "claude", 1, "/work", "fedcba9876543210fedcba9876543210")
+		if err != nil || session.Secret != "s" || len(bodies) != tc.sent {
+			t.Fatalf("%s: session %+v err %v bodies %v", tc.name, session, err, bodies)
+		}
+		for _, field := range tc.kept {
+			if _, sent := bodies[len(bodies)-1][field]; !sent {
+				t.Fatalf("%s: %s dropped: %v", tc.name, field, bodies)
+			}
+		}
 	}
 }
 
@@ -312,11 +347,13 @@ func TestTouchReportsTerminalState(t *testing.T) {
 			w.WriteHeader(int(status.Load()))
 		}
 	})
-	touch := func() TerminalState { return TouchCLISession(socket, session, "zsh", 4242, "/tmp/work") }
+	touch := func() TerminalState {
+		return TouchCLISession(socket, session, "claude", 4242, "/tmp/work", "fedcba9876543210fedcba9876543210")
+	}
 	if touch() != TerminalConnected {
 		t.Fatal("open terminal not reported as connected")
 	}
-	if body := sent.Load().(map[string]string); body["session"] != session || body["label"] != "zsh" || body["pid"] != "4242" || body["folder"] != "/tmp/work" {
+	if body := sent.Load().(map[string]string); body["session"] != session || body["label"] != "claude" || body["pid"] != "4242" || body["folder"] != "/tmp/work" || body["terminal"] != "fedcba9876543210fedcba9876543210" {
 		t.Fatalf("touch does not identify the terminal: %v", body)
 	}
 	status.Store(http.StatusNotFound)
@@ -327,7 +364,7 @@ func TestTouchReportsTerminalState(t *testing.T) {
 	if touch() != TerminalClosedInPanel {
 		t.Fatal("terminal closed in the panel not reported")
 	}
-	if TouchCLISession(filepath.Join(t.TempDir(), "missing.sock"), session, "zsh", 4242, "/tmp/work") != TerminalConnected {
+	if TouchCLISession(filepath.Join(t.TempDir(), "missing.sock"), session, "zsh", 4242, "/tmp/work", "") != TerminalConnected {
 		t.Fatal("unreachable engine reported as a closed or restarted one")
 	}
 }

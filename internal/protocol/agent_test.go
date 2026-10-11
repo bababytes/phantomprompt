@@ -112,10 +112,6 @@ func TestMaskAgentMessagesKeepsClientIdentifiers(t *testing.T) {
 }
 
 func TestMaskAgentMessagesFailsClosed(t *testing.T) {
-	image := map[string]any{"role": "user", "content": []any{map[string]any{"type": "image", "source": map[string]any{"type": "base64", "data": "AAAA"}}}}
-	if _, _, err := MaskAgentMessages(agentRequest(t, image), agentSession(), "", nil); !errors.Is(err, ErrAttachment) {
-		t.Fatal("image content was accepted")
-	}
 	sourced := map[string]any{"role": "user", "content": []any{map[string]any{"type": "future_file", "source": map[string]any{"type": "base64", "data": "AAAA"}}}}
 	if _, _, err := MaskAgentMessages(agentRequest(t, sourced), agentSession(), "", nil); !errors.Is(err, ErrAttachment) {
 		t.Fatalf("unknown block with a binary source accepted: %v", err)

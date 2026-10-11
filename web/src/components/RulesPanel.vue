@@ -1,11 +1,12 @@
 <script setup>
 import { computed, reactive } from "vue";
 import { applyRules, restoreDefaults, workspace } from "../workspace.js";
+import CustomRules from "./CustomRules.vue";
 import NamedFields from "./NamedFields.vue";
 import RuleGroup from "./RuleGroup.vue";
 import SecretPatterns from "./SecretPatterns.vue";
 
-const open = reactive({ secrets: false, fields: false, email: false, guid: false, vin: false, pesel: false });
+const open = reactive({ secrets: false, fields: false, email: false, guid: false, vin: false, pesel: false, custom: false });
 
 const secretsStatus = computed(() => {
   const total = workspace.secretDetectors.length;
@@ -20,7 +21,7 @@ const fieldsStatus = computed(() => {
 const usesDefaults = computed(() => {
   const defaults = workspace.defaultRules;
   if (!defaults) return true;
-  return Object.keys(workspace.rules).every((id) => workspace.rules[id] === Boolean(defaults[id])) && workspace.pesel === Boolean(defaults.pesel) && !workspace.disabledFields.length && !workspace.disabledSecrets.length;
+  return Object.keys(workspace.rules).every((id) => workspace.rules[id] === Boolean(defaults[id])) && workspace.pesel === Boolean(defaults.pesel) && workspace.customRulesOn && !workspace.disabledFields.length && !workspace.disabledSecrets.length;
 });
 const detectors = [
   { id: "email", title: "Email addresses", description: "Anything shaped like name@domain.tld.", note: "" },
@@ -32,7 +33,7 @@ const detectors = [
 <template>
   <section class="workspace-card rules-card" aria-labelledby="rules-card-title">
     <div class="section-heading">
-      <div><p class="eyebrow">BUILT-IN RULES</p><h2 id="rules-card-title">What gets masked by default</h2></div>
+      <div><p class="eyebrow">RULES</p><h2 id="rules-card-title">What gets masked</h2></div>
       <div><button id="restore-defaults" class="secondary" :disabled="workspace.working || usesDefaults" @click="restoreDefaults">Restore defaults</button></div>
     </div>
     <p id="policy-note" class="note">{{ workspace.policyNote }}</p>
@@ -53,8 +54,11 @@ const detectors = [
         <code class="pattern">{{ workspace.detectorPatterns.pesel }}</code>
         <p class="note">Whole numbers only. Numbers with a wrong checksum are masked too, because a typo does not make them less sensitive.</p>
       </RuleGroup>
+      <RuleGroup id="rules" v-model:enabled="workspace.customRulesOn" v-model:open="open.custom" title="Your custom rules" description="Patterns from the Rule Builder, with their match counts." :status="`${workspace.customRules.length}/16 rules`" @change="applyRules">
+        <CustomRules />
+      </RuleGroup>
     </div>
-    <p class="note">Restore defaults switches every built-in group, field and pattern back to its default. Your own fields, Rule Builder rules and protected folders stay as they are.</p>
+    <p class="note">Restore defaults switches every group, built-in field and pattern back to its default. Your own fields, Rule Builder rules and protected folders stay as they are.</p>
   </section>
 </template>
 

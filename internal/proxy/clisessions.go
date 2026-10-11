@@ -37,19 +37,22 @@ type CLISession struct {
 	LastActivity  *time.Time `json:"last_activity,omitempty"`
 	Services      []string   `json:"services"`
 	Prompts       uint64     `json:"prompts"`
+	Requests      uint64     `json:"requests"`
 	Masked        uint64     `json:"masked"`
 	Blocked       uint64     `json:"blocked"`
 	TokenOverhead int64      `json:"token_overhead"`
 	InputTokens   int64      `json:"input_tokens"`
+	UsageOverhead int64      `json:"usage_overhead"`
 	Active        bool       `json:"active"`
 	Expired       bool       `json:"expired"`
 	Disconnected  bool       `json:"disconnected,omitempty"`
 }
 
 type cliEntry struct {
-	secret string
-	closed bool
-	view   CLISession
+	secret   string
+	terminal string
+	closed   bool
+	view     CLISession
 }
 
 type cliRegistry struct {
@@ -118,6 +121,14 @@ func (c *cliRegistry) setFolder(id, path string) {
 	}
 }
 
+func (c *cliRegistry) setTerminal(id, terminal string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if e := c.entries[id]; e != nil {
+		e.terminal = terminal
+	}
+}
+
 func (c *cliRegistry) folder(id string) string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -151,7 +162,7 @@ const (
 	terminalClosed
 )
 
-func (c *cliRegistry) heartbeat(id, label string, pid int, folder string) (terminalState, *CLISession) {
+func (c *cliRegistry) heartbeat(id, label string, pid int, folder, terminal string) (terminalState, *CLISession) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	e := c.entries[id]
@@ -164,6 +175,7 @@ func (c *cliRegistry) heartbeat(id, label string, pid int, folder string) (termi
 		}
 		e.view.Disconnected = true
 		e.view.Folder = displayFolder(folder)
+		e.terminal = terminal
 		added := e.view
 		return terminalDisconnected, &added
 	}
@@ -186,16 +198,23 @@ func (a *App) touchCLISession(id string) {
 	a.cliSessions.touch(id, err != nil)
 }
 
-func (c *cliRegistry) closeTerminal(panelID string) (string, bool) {
+func (c *cliRegistry) closeTerminal(panelID string) []string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for id, e := range c.entries {
 		if e.view.ID == panelID && (e.view.PID > 0 || e.view.Disconnected) && !e.closed {
 			e.closed = true
-			return id, true
+			closed := []string{id}
+			for inner, child := range c.entries {
+				if child.terminal == id && !child.closed {
+					child.closed = true
+					closed = append(closed, inner)
+				}
+			}
+			return closed
 		}
 	}
-	return "", false
+	return nil
 }
 
 func (c *cliRegistry) closedInPanel(id string) bool {
@@ -231,30 +250,76 @@ func (c *cliRegistry) snapshot() []CLISession {
 	defer c.mu.Unlock()
 	now := c.clock()
 	c.prune(now)
-	result := make([]CLISession, 0, len(c.entries))
-	for _, e := range c.entries {
+	views := make(map[string]*CLISession, len(c.entries))
+	for id, e := range c.entries {
 		if e.closed {
 			continue
 		}
 		view := e.view
 		view.Services = slices.Clone(e.view.Services)
 		view.Active = !view.Expired && !view.Disconnected && now.Sub(view.LastSeen) < cliActiveWindow
-		result = append(result, view)
+		views[id] = &view
+	}
+	for id, view := range views {
+		if outer := c.outerView(id, views); outer != nil {
+			outer.include(*view)
+		}
+	}
+	result := make([]CLISession, 0, len(views))
+	for id, view := range views {
+		if c.outerView(id, views) == nil {
+			result = append(result, *view)
+		}
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Started.Before(result[j].Started) })
 	return result
 }
 
+func (c *cliRegistry) outerView(id string, views map[string]*CLISession) *CLISession {
+	terminal := c.entries[id].terminal
+	if outer := c.entries[terminal]; outer == nil || outer.terminal != "" {
+		return nil
+	}
+	return views[terminal]
+}
+
+func (v *CLISession) include(inner CLISession) {
+	v.Prompts += inner.Prompts
+	v.Requests += inner.Requests
+	v.Masked += inner.Masked
+	v.Blocked += inner.Blocked
+	v.TokenOverhead += inner.TokenOverhead
+	v.InputTokens += inner.InputTokens
+	v.UsageOverhead += inner.UsageOverhead
+	v.Active = v.Active || inner.Active
+	if inner.LastActivity != nil && (v.LastActivity == nil || inner.LastActivity.After(*v.LastActivity)) {
+		v.LastActivity = inner.LastActivity
+	}
+	for _, service := range inner.Services {
+		if !slices.Contains(v.Services, service) {
+			v.Services = append(v.Services, service)
+		}
+	}
+}
+
+func (c *cliRegistry) resetCounters() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, e := range c.entries {
+		e.view.Prompts, e.view.Requests, e.view.Masked, e.view.Blocked = 0, 0, 0, 0
+		e.view.TokenOverhead, e.view.InputTokens, e.view.UsageOverhead = 0, 0, 0
+	}
+}
+
 func (a *App) CLISessions() []CLISession { return a.cliSessions.snapshot() }
 
 func (a *App) CloseTerminal(panelID string) bool {
-	id, ok := a.cliSessions.closeTerminal(panelID)
-	if !ok {
-		return false
+	closed := a.cliSessions.closeTerminal(panelID)
+	for _, id := range closed {
+		a.Sessions.Delete(id)
+		a.forgetTurns(id)
 	}
-	a.Sessions.Delete(id)
-	a.forgetTurns(id)
-	return true
+	return len(closed) > 0
 }
 
 func (c *cliRegistry) processes() map[string]int {

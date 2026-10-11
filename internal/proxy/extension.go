@@ -34,9 +34,10 @@ type trustRequest struct {
 }
 
 type cliSessionRequest struct {
-	Label  string `json:"label"`
-	PID    int    `json:"pid"`
-	Folder string `json:"folder"`
+	Label    string `json:"label"`
+	PID      int    `json:"pid"`
+	Folder   string `json:"folder"`
+	Terminal string `json:"terminal"`
 }
 
 func (a *App) Extension(addresses LocalAddresses) http.Handler {
@@ -72,6 +73,7 @@ func (a *App) Extension(addresses LocalAddresses) http.Handler {
 			return
 		}
 		a.cliSessions.setFolder(id, req.Folder)
+		a.cliSessions.setTerminal(id, req.Terminal)
 		writeExtension(w, map[string]string{"session": id, "secret": secret})
 	})
 	mux.HandleFunc("POST /v1/cli/touch", func(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +82,7 @@ func (a *App) Extension(addresses LocalAddresses) http.Handler {
 			return
 		}
 		pid, _ := strconv.Atoi(req["pid"])
-		state, added := a.cliSessions.heartbeat(req["session"], req["label"], pid, req["folder"])
+		state, added := a.cliSessions.heartbeat(req["session"], req["label"], pid, req["folder"], req["terminal"])
 		if added != nil {
 			a.Events.log.Logger().Warn("terminal from before a restart is disconnected", "terminal", added.Label, "pid", added.PID, "folder", added.Folder)
 		}

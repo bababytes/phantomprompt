@@ -55,7 +55,7 @@ func (a *App) Control(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	case r.URL.Path == "/status" && r.Method == http.MethodGet:
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"forwarded": a.Forwarded.Load(), "blocked": a.Blocked.Load(), "vin": a.MaskedVIN.Load(), "pesel": a.MaskedPESEL.Load(), "email": a.MaskedEmail.Load(), "fields": a.MaskedFields.Load(), "guid": a.MaskedGUID.Load(), "custom": a.MaskedCustom.Load(), "secret": a.MaskedSecret.Load(), "file": a.MaskedFile.Load(), "new_values": a.MaskedNew.Load(), "token_overhead": a.TokenOverhead.Load(), "protection": a.Protection(), "integrations": a.Integrations(), "prompts": a.PromptStats(), "cli_sessions": a.CLISessions(), "protected_paths": a.ProtectedPathStatus(), "trusted_paths": a.TrustedPathStatus(), "custom_rules": a.CustomRuleStats(), "secret_rules": a.SecretRuleStats(), "format_alerts": a.FormatAlerts(), "log_folder": a.LogFolder()})
+		json.NewEncoder(w).Encode(map[string]any{"forwarded": a.Forwarded.Load(), "blocked": a.Blocked.Load(), "vin": a.MaskedVIN.Load(), "pesel": a.MaskedPESEL.Load(), "email": a.MaskedEmail.Load(), "fields": a.MaskedFields.Load(), "guid": a.MaskedGUID.Load(), "custom": a.MaskedCustom.Load(), "secret": a.MaskedSecret.Load(), "file": a.MaskedFile.Load(), "new_values": a.MaskedNew.Load(), "typed_values": a.MaskedTyped.Load(), "context_values": a.MaskedContext.Load(), "prompts_sent": a.PromptsSent.Load(), "token_overhead": a.TokenOverhead.Load(), "input_tokens": a.InputTokens.Load(), "usage_overhead": a.UsageOverhead.Load(), "protection": a.Protection(), "integrations": a.Integrations(), "prompts": a.PromptStats(), "cli_sessions": a.CLISessions(), "protected_paths": a.ProtectedPathStatus(), "trusted_paths": a.TrustedPathStatus(), "custom_rules": a.CustomRuleStats(), "secret_rules": a.SecretRuleStats(), "format_alerts": a.FormatAlerts(), "log_folder": a.LogFolder()})
 	case r.URL.Path == "/events" && r.Method == http.MethodGet:
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(a.Events.Snapshot())
@@ -65,6 +65,7 @@ func (a *App) Control(w http.ResponseWriter, r *http.Request) {
 	case r.URL.Path == "/events" && r.Method == http.MethodDelete:
 		a.Events.Clear()
 		a.customRules.clearExamples()
+		a.resetTotals()
 		w.WriteHeader(http.StatusNoContent)
 	default:
 		http.NotFound(w, r)
