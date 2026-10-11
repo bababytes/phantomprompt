@@ -13,7 +13,7 @@
 [![CI](https://github.com/baba-bytes/phantomprompt/actions/workflows/ci.yml/badge.svg)](https://github.com/baba-bytes/phantomprompt/actions/workflows/ci.yml)
 [![macOS](https://img.shields.io/badge/platform-macOS-000000?style=flat-square&logo=apple&logoColor=white)](#install)
 [![Go](https://img.shields.io/badge/built_with-Go-00ADD8?style=flat-square&logo=go&logoColor=white)](#development)
-[![License](https://img.shields.io/badge/license-Apache--2.0-green?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/license-PolyForm_Strict_1.0.0-orange?style=flat-square)](LICENSE)
 <!-- version:end -->
 
 **[Download for macOS](https://github.com/baba-bytes/phantomprompt/releases/latest)**
@@ -226,8 +226,10 @@ The release is signed with a Developer ID and notarized when the repository has 
 
 ## Contributing
 
-[Open an issue](https://github.com/baba-bytes/phantomprompt/issues) to report a bug or suggest a feature, or [send a pull request](https://github.com/baba-bytes/phantomprompt/pulls) to improve the code or docs. Run the checks from [Development](#development) before you send it.
+[Open an issue](https://github.com/baba-bytes/phantomprompt/issues) to report a bug or suggest a feature. The code is not open for outside changes, so pull requests are not accepted.
 
 ## License
 
-[Apache License 2.0](LICENSE).
+PhantomPrompt is source-available under the [PolyForm Strict License 1.0.0](LICENSE). You may use it for personal and other noncommercial purposes. You may not change it, build other works on it, redistribute it or use it commercially. For commercial use, [contact the author](https://github.com/bababytes).
+
+Third-party components keep their own licenses; their texts ship with the app in `LICENSES.txt`.
