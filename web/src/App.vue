@@ -38,6 +38,7 @@ onMounted(() => {
   <main>
     <AppHeader />
     <div v-if="!monitor.protection" id="protection-banner" role="alert">⚠ Protection is OFF — traffic to AI is NOT masked. Your data leaves unmasked. Turn it back on when done.</div>
+    <div v-if="monitor.totals.second_instance && !monitor.stopped" id="second-instance-banner" role="alert">This is a second copy of PhantomPrompt. Your protected terminals report to the other copy, so they don't show here. Click Stop to close this copy, then open the panel with the app icon or <code>phantom open</code>.</div>
     <div v-if="monitor.stopped" id="stopped-banner" role="alert">PhantomPrompt has been stopped. This page is no longer live. Start it again with the PhantomPrompt app icon or <code>phantom open</code>.</div>
     <section id="section-status" class="page-section" aria-labelledby="section-status-label">
       <p id="section-status-label" class="section-label">Status</p>

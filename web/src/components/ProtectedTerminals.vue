@@ -105,7 +105,7 @@ function state(item) {
           <tr v-for="item in sessions" :key="item.started + item.label + item.pid">
             <td class="command">{{ terminalName(item) }}<button v-if="item.pid || item.disconnected" type="button" class="close-terminal" :aria-label="`Close ${terminalName(item)}`" title="Close this terminal" @click="close(item)">×</button></td>
             <td class="folder" :title="item.folder">{{ item.folder ? folderName(item.folder) : "—" }}</td>
-            <td class="exceptions"><button v-if="item.folder" type="button" class="secondary compact" :aria-expanded="trustStart === item.folder" :disabled="trusting" :title="`Pick a folder inside ${homePath(item.folder)} whose content is sent without masking, such as test data`" @click="chooseTrusted(item.folder)">Trust a folder…</button></td>
+            <td class="exceptions"><button v-if="item.folder" type="button" class="text-button" :aria-expanded="trustStart === item.folder" :disabled="trusting" :aria-label="`Trust a folder inside ${folderName(item.folder)}`" :title="`Pick a folder inside ${homePath(item.folder)} whose content is sent without masking, such as test data`" @click="chooseTrusted(item.folder)">Trust…</button></td>
             <td :class="state(item).cls">{{ state(item).text }}</td>
             <td>{{ item.services.length ? item.services.join(", ") : "—" }}</td>
             <td :title="`${item.requests ?? 0} AI requests`">{{ item.prompts }}</td>
@@ -142,6 +142,8 @@ function state(item) {
 .close-terminal { margin: 0 0 0 6px; width: 22px; height: 22px; display: inline-grid; place-items: center; vertical-align: middle; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 14px; line-height: 1; }
 .close-terminal:hover { background: rgb(255 255 255 / .08); color: var(--text); }
 .exceptions { white-space: nowrap; }
+.exceptions button { margin: 0; padding: 2px 6px; color: var(--muted); text-decoration: underline 1px var(--line-strong); text-underline-offset: 3px; }
+.exceptions button:hover:enabled, .exceptions button[aria-expanded=true] { color: var(--text); }
 .trusted-title { margin: 20px 0 0; }
 .trusted-title + .chips { margin-top: 10px; }
 .chip.trusted { border-color: var(--warn); color: var(--warn); }

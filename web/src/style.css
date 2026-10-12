@@ -152,8 +152,9 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .text-button { background: transparent; border: 0; padding: 4px 6px; color: var(--accent); font-size: 12px; border-radius: 6px; }
 .text-button:hover:enabled { background: var(--accent-soft); }
 
-#protection-banner, #stopped-banner { border-radius: 12px; margin: 16px 0 0; padding: 12px 16px; font-size: 13px; }
+#protection-banner, #stopped-banner, #second-instance-banner { border-radius: 12px; margin: 16px 0 0; padding: 12px 16px; font-size: 13px; }
 #protection-banner { background: var(--warn-soft); border: 1px solid rgb(227 178 90 / .4); color: var(--warn); font-weight: 600; }
+#second-instance-banner { background: var(--warn-soft); border: 1px solid rgb(227 178 90 / .4); color: var(--warn); }
 #stopped-banner { background: var(--bg-raise); border: 1px solid var(--line-strong); color: var(--muted); }
 
 .switch { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 12px; color: var(--accent); cursor: pointer; }

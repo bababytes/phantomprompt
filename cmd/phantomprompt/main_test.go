@@ -1,13 +1,19 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
+
+	"phantomprompt/internal/proxy"
 )
 
 func TestGatewayKeyIsCreatedOnceAndPrivate(t *testing.T) {
@@ -202,5 +208,45 @@ func TestClaudeEndpointErrorNeverShowsTheURL(t *testing.T) {
 	err := claudeEndpointError([]string{"ANTHROPIC_BASE_URL=https://gw.company.example/t/sk-secret-value", "CLAUDE_CODE_USE_BEDROCK=1"})
 	if err == nil || strings.Contains(err.Error(), "sk-secret-value") || strings.Contains(err.Error(), "company") || !strings.Contains(err.Error(), "unset ANTHROPIC_BASE_URL CLAUDE_CODE_USE_BEDROCK") {
 		t.Fatalf("message %v", err)
+	}
+}
+
+func TestSecondAppTellsItsPanelThatTerminalsUseTheFirst(t *testing.T) {
+	const access = "synthetic-access-token-00000000000000"
+	short, err := os.MkdirTemp("", "pp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(short) })
+	t.Setenv("HOME", short)
+	t.Setenv("TMPDIR", short)
+	start := func(listener net.Listener, handler http.Handler) *http.Server {
+		server := &http.Server{Handler: handler}
+		go server.Serve(listener)
+		return server
+	}
+	secondInstance := func(app *proxy.App) any {
+		request := httptest.NewRequest(http.MethodGet, "/status", nil)
+		request.Header.Set(proxy.AccessHeader, access)
+		w := httptest.NewRecorder()
+		app.Control(w, request)
+		var status map[string]any
+		if err := json.Unmarshal(w.Body.Bytes(), &status); err != nil {
+			t.Fatal(err)
+		}
+		return status["second_instance"]
+	}
+	var apps []*proxy.App
+	for range 2 {
+		app, err := proxy.New(proxy.Config{Integrations: []string{proxy.ClaudeCode}}, access, proxy.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer app.Close()
+		defer engineSocket(app, proxy.LocalAddresses{}, start)()
+		apps = append(apps, app)
+	}
+	if secondInstance(apps[0]) != false || secondInstance(apps[1]) != true {
+		t.Fatalf("first app second_instance %v, second %v", secondInstance(apps[0]), secondInstance(apps[1]))
 	}
 }

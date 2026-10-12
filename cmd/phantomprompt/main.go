@@ -100,6 +100,7 @@ func engineSocket(app *proxy.App, addresses proxy.LocalAddresses, start func(net
 	}
 	listener, err := extension.Listen(socket)
 	if errors.Is(err, extension.ErrRunning) {
+		app.SecondInstance.Store(true)
 		fmt.Println("Engine socket: served by another running PhantomPrompt instance.")
 		return func() {}
 	}

@@ -57,6 +57,13 @@ func loopbackAddress(address string) bool {
 	return err == nil && port != "" && !strings.ContainsAny(port, "/?#") && ip != nil && ip.IsLoopback()
 }
 
+func loopbackHost(host string) bool {
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+	return host == "localhost" || strings.HasSuffix(host, ".localhost")
+}
+
 func OpenCLISession(socket, label string, pid int, folder, terminal string) (CLISession, func(), error) {
 	client := engineClient(socket)
 	open := func(fields map[string]any) (*http.Response, error) {
@@ -228,7 +235,7 @@ func PanelURL(socket string) (string, error) {
 		return "", errors.New("unexpected engine reply")
 	}
 	panel, err := url.Parse(reply.URL)
-	if err != nil || panel.Scheme != "http" || panel.User != nil || !net.ParseIP(panel.Hostname()).IsLoopback() {
+	if err != nil || panel.Scheme != "http" || panel.User != nil || !loopbackHost(panel.Hostname()) {
 		return "", errors.New("unexpected panel address")
 	}
 	return panel.String(), nil

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+
+	"phantomprompt/internal/demo"
 )
 
 const syntheticPEM = "-----BEGIN CERTIFICATE-----\nU1lOVEhFVElD\n-----END CERTIFICATE-----\n"
@@ -136,7 +138,8 @@ func TestOutdatedEngineIsReported(t *testing.T) {
 }
 
 func TestPanelURLAcceptsOnlyLoopback(t *testing.T) {
-	for address, valid := range map[string]bool{"http://127.0.0.1:18090": true, "http://[::1]:18090": true, "https://127.0.0.1:18090": false, "http://example.test:18090": false, "http://user:pass@127.0.0.1:18090": false} {
+	enginePanel := "http://" + demo.PanelHost("127.0.0.1:18090") + "/?login=synthetic"
+	for address, valid := range map[string]bool{enginePanel: true, "http://localhost:18090": true, "http://127.0.0.1:18090": true, "http://[::1]:18090": true, "https://127.0.0.1:18090": false, "http://example.test:18090": false, "http://localhost.example.test:18090": false, "http://phantomprompt.localhost.example.test:18090": false, "http://user:pass@127.0.0.1:18090": false} {
 		socket := fakeEngine(t, func(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(map[string]string{"url": address})
 		})

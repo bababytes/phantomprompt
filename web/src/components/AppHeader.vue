@@ -1,5 +1,5 @@
 <script setup>
-import { onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { GHOST_EYE_RADIUS, GHOST_EYES, GHOST_PATH } from "../ghost.js";
 import { monitor, setProtection, stopApp } from "../monitor.js";
 
@@ -17,6 +17,12 @@ const nav = ref(null);
 const pill = reactive({ x: 0, width: 0 });
 let observer = null;
 let resize = null;
+
+const engine = computed(() => {
+  if (monitor.stopped || monitor.error || !monitor.updated) return { state: "down", text: "Engine not responding: this page is not live." };
+  if (monitor.totals.second_instance) return { state: "second", text: "Second copy of PhantomPrompt: protected terminals report to the other copy, not to this panel." };
+  return { state: "live", text: "Engine running: this is the main panel, protected terminals report here." };
+});
 
 async function toggle(event) {
   if (!(await setProtection(event.target.checked))) event.target.checked = monitor.protection;
@@ -84,7 +90,8 @@ onBeforeUnmount(() => {
         <a v-for="section in SECTIONS" :key="section.id" :href="`#${section.id}`" :class="{ active: current === section.id }" :aria-current="current === section.id ? 'location' : undefined" @click="current = section.id">{{ section.label }}</a>
       </nav>
       <div class="header-controls">
-        <label class="switch"><input id="protection" type="checkbox" :checked="monitor.protection" @change="toggle"> <span id="protection-state" :class="{ off: !monitor.protection }">{{ monitor.protection ? "Protection on" : "Protection OFF" }}</span></label>
+        <label class="switch" :class="{ live: engine.state === 'live' && monitor.protection, down: engine.state === 'down' }" :title="engine.text"><input id="protection" type="checkbox" :checked="monitor.protection" aria-describedby="engine-state" @change="toggle"> <span id="protection-state" :class="{ off: !monitor.protection }">{{ monitor.protection ? "Protection on" : "Protection OFF" }}</span></label>
+        <span id="engine-state" class="sr-only">{{ engine.text }}</span>
         <button id="stop-app" class="secondary compact" title="Stop PhantomPrompt" :disabled="monitor.stopped" @click="stopApp">Stop</button>
       </div>
     </div>
@@ -113,8 +120,11 @@ onBeforeUnmount(() => {
 .section-nav > a.active { background: none; color: var(--text); }
 
 .header-controls { justify-self: end; display: flex; align-items: center; gap: 14px; }
+.switch.live input[type=checkbox]::after { animation: engine-pulse 2.8s ease-in-out infinite; }
+.switch.down input[type=checkbox]::after { background: var(--faint); }
 
 
+@keyframes engine-pulse { 0%, 100% { opacity: .6; box-shadow: 0 0 0 0 transparent; } 50% { opacity: 1; box-shadow: 0 0 8px 1px rgb(76 201 149 / .65); } }
 @keyframes shimmer { 0%, 55% { background-position: 100% 0; } 85%, 100% { background-position: 0 0; } }
 
 @media (max-width: 850px) {

@@ -82,6 +82,9 @@ codesign --verify --strict --verbose=1 "${app_dir}"
 rm -f dist/AppIcon.icns
 
 dmg="dist/PhantomPrompt-${version}.dmg"
+if [[ -z "${PHANTOMPROMPT_VERSION:-}" && ! "${version}" =~ '^v[0-9]+\.[0-9]+\.[0-9]+$' ]]; then
+  dmg="dist/PhantomPrompt-${version}-$(date +%Y-%m-%d-%H%M).dmg"
+fi
 staging="$(mktemp -d)"
 ditto "${app_dir}" "${staging}/PhantomPrompt.app"
 ln -s /Applications "${staging}/Applications"

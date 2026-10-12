@@ -71,6 +71,7 @@ type App struct {
 	InputTokens    atomic.Int64
 	UsageOverhead  atomic.Int64
 	resets         atomic.Uint64
+	SecondInstance atomic.Bool
 	Events         Events
 	stop           chan struct{}
 	once           sync.Once
