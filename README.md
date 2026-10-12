@@ -16,13 +16,14 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-green?style=flat-square)](LICENSE)
 <!-- version:end -->
 
-**[Download for macOS](https://github.com/bababytes/phantomprompt/releases/latest)**
+**[Download for macOS](https://github.com/bababytes/phantomprompt/releases/latest)**<br />
+<sub>Mac App Store version coming soon</sub>
 
 [Quick start](#quick-start) · [How it works](#how-it-works) · [Supported agents](#supported-agents) · [Trusted folders](#trusted-folders) · [FAQ](#faq) · [Development](#development) · [Contact](#say-hi-)
 
 <img src="docs/assets/pipeline.gif" alt="Animation: values typed in a terminal, such as a VIN and an e-mail address, pass through PhantomPrompt and reach the AI provider as placeholders" width="720" />
 
-<code>phantom claude</code>
+Use <code>phantom</code> to secure your CLI
 
 <br />
 
@@ -188,7 +189,6 @@ The token map is never written to disk. These files are (all `0600`, in your use
 |---|---|
 | `~/Library/Application Support/PhantomPrompt/rules.json` | Enabled detectors, your field names, your regular expressions, protected and trusted folders. Your patterns may contain the words they protect. |
 | `~/Library/Application Support/PhantomPrompt/engine.sock` | Local socket the CLI uses to talk to the app. |
-| `~/Library/Application Support/PhantomPrompt/gateway.key` | App Store edition only: the fixed gateway key for your shell profile. |
 | `~/Library/Logs/PhantomPrompt/YYYY-MM-DD.log` | App log, one readable line per important entry: errors, blocked requests, errors returned by the AI service, placeholders not restored, protection turned off or on, app start and stop, crash traces. No prompt text, values, placeholders, credentials, login links or session IDs. One file per day, the newest 7 are kept, at most 5 MB a day; Clear history in the panel does not delete it. |
 | `$TMPDIR/phantomprompt-ca-*.pem`, `phantomprompt-shims-*/`, `phantomprompt-terminal-*/` | Public certificate of the local CA, command wrappers of the protected shell, a self-deleting launcher. Removed on exit. |
 
