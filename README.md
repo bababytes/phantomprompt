@@ -260,3 +260,5 @@ Found a bug? An [issue](https://github.com/bababytes/phantomprompt/issues) is th
 PhantomPrompt is open source under the [Apache License 2.0](LICENSE). Copyright 2026 BaBa.
 
 You may use, change and share it, also commercially. If you redistribute PhantomPrompt or build on it, keep the [LICENSE](LICENSE) and [NOTICE](NOTICE) files so the credit to BaBa stays with it.
+
+PhantomPrompt is not affiliated with or endorsed by Anthropic, OpenAI or GitHub. Product names are trademarks of their owners.

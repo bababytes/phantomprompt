@@ -1,6 +1,5 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { BRAND_ICONS } from "../brandIcons.js";
 import { GHOST_DOME, GHOST_EYE_RADIUS, GHOST_EYES, GHOST_HEM, GHOST_LOBE, GHOST_PATH } from "../ghost.js";
 import { monitor } from "../monitor.js";
 
@@ -19,15 +18,15 @@ const TOKEN_GLYPHS = "abcdefghijkmnpqrstuvwxyz23456789";
 const VIN_GLYPHS = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789";
 const SCRAMBLE_GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
 const PROVIDERS = {
-  "Claude Code": { name: "Anthropic", icon: "anthropic" },
-  "GitHub Copilot CLI": { name: "Copilot", icon: "githubcopilot" },
-  "Codex CLI": { name: "OpenAI", icon: "openai" },
+  "Claude Code": { name: "Anthropic" },
+  "GitHub Copilot CLI": { name: "Copilot" },
+  "Codex CLI": { name: "OpenAI" },
 };
-const LOGO_PITCH = 38;
-const LOGO_MIN = 22;
-const LOGO_MAX = 28;
+const CHIP_PITCH = 38;
+const CHIP_MIN = 22;
+const CHIP_MAX = 28;
+const PROVIDER_WIDTH = 80;
 const FRAME_PAD = 10;
-const LABEL_ROOM = 32;
 const LANDED_SECONDS = 1.8;
 const TERMINAL_LINES = [
   { text: "ask anna.k@corp", kind: "EMAIL", raw: "anna.k@corp" },
@@ -186,13 +185,14 @@ function rows(count, top, bottom, maxPitch) {
 }
 
 function column(count, center, left, right, top, bottom) {
-  const ys = rows(count, top, bottom, LOGO_PITCH);
-  const pitch = count > 1 ? ys[1] - ys[0] : LOGO_PITCH;
-  const logo = Math.min(LOGO_MAX, Math.max(LOGO_MIN, pitch - 10));
-  const half = logo / 2 + FRAME_PAD;
-  const x = Math.round(Math.max(left + half, Math.min(center, right - half - LABEL_ROOM)));
-  const frame = { left: x - half, top: ys[0] - half, width: 2 * half, height: ys.at(-1) - ys[0] + 2 * half };
-  return { logo, frame, providers: ys.map((y) => ({ x, y })) };
+  const ys = rows(count, top, bottom, CHIP_PITCH);
+  const pitch = count > 1 ? ys[1] - ys[0] : CHIP_PITCH;
+  const chip = Math.min(CHIP_MAX, Math.max(CHIP_MIN, pitch - 10));
+  const halfWidth = PROVIDER_WIDTH / 2 + FRAME_PAD;
+  const halfHeight = chip / 2 + FRAME_PAD;
+  const x = Math.round(Math.max(left + halfWidth, Math.min(center, right - halfWidth)));
+  const frame = { left: x - halfWidth, top: ys[0] - halfHeight, width: 2 * halfWidth, height: ys.at(-1) - ys[0] + 2 * halfHeight };
+  return { chip, frame, providers: ys.map((y) => ({ x, y })) };
 }
 
 function build() {
@@ -206,7 +206,7 @@ function build() {
   const gate = Math.round(width / 2);
   const sourceRows = rows(sources.value.length, top, bottom, ROW_PITCH);
   const targets = column(providers.value.length, width - 18 - (inset - 30) / 2, width - inset + 12, width - 18, top, bottom);
-  const edge = (targets.providers[0]?.x ?? width - inset) - targets.logo / 2 - 3;
+  const edge = (targets.providers[0]?.x ?? width - inset) - PROVIDER_WIDTH / 2 - 3;
   geometry = {
     top, bottom, mid, gate, left: inset, right: width - inset, providerEdge: edge, sourceRows,
     inbound: sourceRows.map((y) => curve(inset, y, gate, mid)),
@@ -216,7 +216,7 @@ function build() {
     particle.source %= geometry.inbound.length;
     particle.provider %= geometry.outbound.length;
   }
-  layout.value = { width, left: inset, right: width - inset, sources: sourceRows, logo: targets.logo, frame: targets.frame, providers: targets.providers };
+  layout.value = { width, left: inset, right: width - inset, sources: sourceRows, chip: targets.chip, frame: targets.frame, providers: targets.providers };
 }
 
 function sample(path, distance) {
@@ -783,11 +783,8 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="pipeline-providers" :style="{ left: `${layout.frame.left}px`, top: `${layout.frame.top}px`, width: `${layout.frame.width}px`, height: `${layout.frame.height}px` }"></div>
-      <div v-for="(provider, index) in providers" :key="provider.service" class="pipeline-node pipeline-provider" :class="[provider.seen ? 'pipeline-node-seen' : 'pipeline-node-idle', index === focus ? 'pipeline-provider-near' : 'pipeline-provider-far', { 'pipeline-provider-landed': index === landed }]" :title="provider.name" :style="{ top: `${layout.providers[index].y}px`, left: `${layout.providers[index].x}px`, '--logo': `${layout.logo}px` }">
-        <span class="pipeline-chip">
-          <svg class="pipeline-icon" viewBox="0 0 24 24"><path :d="BRAND_ICONS[provider.icon]" /></svg>
-        </span>
-        <span class="pipeline-provider-name">{{ provider.name }}</span>
+      <div v-for="(provider, index) in providers" :key="provider.service" class="pipeline-node pipeline-provider" :class="[provider.seen ? 'pipeline-node-seen' : 'pipeline-node-idle', index === focus ? 'pipeline-provider-near' : 'pipeline-provider-far', { 'pipeline-provider-landed': index === landed }]" :title="provider.name" :style="{ top: `${layout.providers[index].y}px`, left: `${layout.providers[index].x}px`, '--chip': `${layout.chip}px`, '--provider-width': `${PROVIDER_WIDTH}px` }">
+        <span class="pipeline-chip">{{ provider.name }}</span>
       </div>
     </div>
     <figcaption class="pipeline-caption">
