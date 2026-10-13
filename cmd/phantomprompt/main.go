@@ -186,8 +186,22 @@ func (b banner) print() {
 }
 
 func colorTerminal(file *os.File) bool {
+	return onTerminal(file) && os.Getenv("NO_COLOR") == "" && os.Getenv("TERM") != "dumb"
+}
+
+func onTerminal(file *os.File) bool {
 	info, err := file.Stat()
-	return err == nil && info.Mode()&os.ModeCharDevice != 0 && os.Getenv("NO_COLOR") == "" && os.Getenv("TERM") != "dumb"
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
+}
+
+const terminalModesOff = "\033[?1000l\033[?1002l\033[?1003l\033[?1004l\033[?1006l\033[?1015l\033[?2004l\033[?25h"
+
+func closedInPanelNotice(terminal bool) string {
+	notice := "PhantomPrompt: this terminal was closed in the panel.\n"
+	if terminal {
+		return terminalModesOff + notice
+	}
+	return notice
 }
 
 func insideProtectedShell() bool {
@@ -527,7 +541,7 @@ func protectedProcess(binary string, args []string, openPanel bool, notice banne
 	}()
 	err = command.Wait()
 	if closedInPanel.Load() {
-		fmt.Fprintln(os.Stderr, "PhantomPrompt: this terminal was closed in the panel.")
+		fmt.Fprint(os.Stderr, closedInPanelNotice(onTerminal(os.Stderr)))
 		return nil
 	}
 	var exit *exec.ExitError

@@ -1,51 +1,11 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
 import { logsInFinder } from "../config.js";
+import { COUNT_LABELS, RESULTS, SERVICES, blockInfo, folderAccess, kindStyle, maskedValues, statusInfo } from "../events.js";
 import { clearEvents, folderName, monitor, refresh, showLogFolder, time, tokenOverhead } from "../monitor.js";
 import RuleSummary from "./RuleSummary.vue";
 import ValueSummary from "./ValueSummary.vue";
 import { valueRows } from "../valueRows.js";
-
-const SERVICES = { "copilot-cli": "GitHub Copilot CLI", "claude-code": "Claude Code", "codex-cli": "Codex CLI", demo: "Local demo", "openai-chat": "OpenAI API", "anthropic-messages": "Anthropic API" };
-const RESULTS = {
-  accepted: "Masked",
-  stream_complete: "Masked · reply restored",
-  masked_and_restored: "Masked · reply restored",
-  passed_without_restore: "Sent · reply not restored",
-  sensitive_value_outside_prompt: "Blocked · protected value outside the prompt",
-  attachments_not_supported: "Blocked · attachment",
-  unknown_token_in_input: "Blocked · unknown token",
-  new_content_type_masked: "Masked · new content type (check for a PhantomPrompt update)",
-  secret_kept_masked_in_tool: "Secret kept masked in a shell or web command",
-  placeholders_not_restored: "Reply · placeholders not restored",
-  unsupported_content: "Blocked · unknown request format",
-  masking_limit: "Blocked · masking limit",
-  tool_arguments_masked: "Masked · tool call to GitHub",
-  model_format_not_supported_yet: "Blocked · model format not supported yet (choose a Claude model)",
-  session_expired_restart_cli: "Blocked · session expired, restart the CLI",
-  sensitive_value_not_masked_yet: "Blocked · protected value in an unsupported channel",
-  upgrade_not_supported: "Blocked · websocket upgrade",
-  body_limit: "Blocked · request too large",
-  body_limit_or_encoding_error: "Blocked · request too large or unreadable",
-  masked_body_limit: "Blocked · masked request too large",
-  invalid_compression: "Blocked · broken compression",
-  unsupported_encoding: "Blocked · unsupported compression",
-  unsupported_content_or_masking_limit: "Blocked · unknown format or masking limit",
-  session_expired_or_wrong_origin: "Blocked · session expired",
-  session_unavailable: "Blocked · session unavailable",
-  concurrency_limit: "Blocked · too many requests at once",
-  route_or_method_not_supported: "Blocked · route not supported",
-  upstream_TLS_or_connection_failed: "Failed · AI service unreachable",
-  upstream_rejected_request: "Failed · AI service rejected the request",
-  unsupported_response_content: "Failed · reply format unknown",
-  unsupported_upstream_response: "Failed · reply format unknown",
-  compressed_upstream_response_not_supported: "Failed · compressed reply",
-  response_limit: "Failed · reply too large",
-  stream_interrupted: "Failed · stream interrupted",
-  protection_enabled: "Protection turned on",
-  protection_disabled: "Protection turned OFF",
-};
-const COUNT_LABELS = { vin: "VIN", guid: "GUID", email: "email", fields: "field", custom: "custom", pesel: "PESEL", secret: "secret/password" };
 
 const expanded = reactive(new Set());
 const query = ref("");
@@ -102,45 +62,16 @@ function channel(event) {
   return ["copilot-cli", "claude-code", "codex-cli"].includes(event.adapter) ? "CLI" : "proxy";
 }
 
-function statusInfo(event) {
-  if (event.phase === "control") return { text: RESULTS[event.reason] ?? event.reason, cls: event.reason === "protection_disabled" ? "status-warn" : "status-ok" };
-  if (event.reason === "passed_without_restore") return { text: event.status >= 400 ? `AI service answered ${event.status} · passed to the tool` : "Sent · reply not restored", cls: "status-warn" };
-  if (event.status >= 400) {
-    const label = RESULTS[event.reason] ?? `Blocked · ${event.reason}`;
-    const text = label.startsWith("Blocked") || label.startsWith("Failed") ? label : `Blocked · ${label}`;
-    return { text: event.repeats ? `${text} ×${event.repeats + 1}` : text, cls: "status-block" };
-  }
-  if (event.unrestored > 0) return { text: `⚠ ${event.unrestored} placeholder(s) not restored in the reply`, cls: "status-warn" };
-  if (event.matches.attachments > 0) return { text: `⚠ ${event.matches.attachments} image(s) or file(s) sent without checking`, cls: "status-warn" };
-  const blockedFolders = Object.keys(event.matches.blocked_folders ?? {});
-  if (blockedFolders.length) return { text: `🚫 Folder access blocked (${blockedFolders.join(", ")})`, cls: "status-secret" };
-  if ((event.matches.secret ?? 0) > 0) return { text: `🔒 Password/secret masked (${event.matches.secret})`, cls: "status-secret" };
-  return { text: "Protected", cls: "status-ok" };
-}
-
-function kindList(kinds) {
-  return Object.entries(kinds).filter(([kind, count]) => COUNT_LABELS[kind] && count > 0).map(([kind, count]) => `${COUNT_LABELS[kind]} ${count}`).join(", ");
-}
-
-function maskedValues(event) {
-  const unique = event.matches.new_kinds;
-  if (!unique) return [...folderAccess(event), kindList(event.matches)].filter(Boolean).join(" · ") || "—";
-  const typed = event.matches.typed_kinds ?? {};
-  const context = event.matches.context_kinds ?? {};
-  const found = Object.fromEntries(Object.entries(unique).map(([kind, n]) => [kind, n - (typed[kind] ?? 0) - (context[kind] ?? 0)]));
-  const sources = [["you", typed], ["found by AI", found], [SERVICES[event.adapter] ?? "tool", context]].map(([source, kinds]) => [source, kindList(kinds)]).filter(([, list]) => list);
-  return [...folderAccess(event), ...sources.map(([source, list]) => `${source}: ${list}`)].join(" · ") || "—";
-}
-
-function folderAccess(event) {
-  const access = (folders, action) => Object.entries(folders ?? {}).map(([folder, n]) => (n > 1 ? `${folder} ${action} ×${n}` : `${folder} ${action}`));
-  return [...access(event.matches.blocked_folders, "blocked"), ...access(event.matches.masked_folders, "masked")];
-}
-
 function details(event) {
   const overhead = event.overhead_ms > 0;
   const aiTime = overhead && event.elapsed_ms > event.overhead_ms ? `${((event.elapsed_ms - event.overhead_ms) / 1000).toFixed(1)} s` : null;
+  const block = blockInfo(event, monitor.discovery);
   return [
+    block ? `Blocked: ${block.place}` : null,
+    block?.kind ? `What: ${kindStyle(block.kind).label} (the value itself is never shown)` : null,
+    block?.where ? `Technical location: ${block.where}` : null,
+    block?.why ? `Why: ${block.why}` : null,
+    block ? `Effect on the AI conversation: ${block.effect}` : null,
     `Channel: ${channel(event)}`,
     event.folder ? `Folder: ${folderName(event.folder)}` : null,
     `Reason: ${RESULTS[event.reason] ?? event.reason}`,

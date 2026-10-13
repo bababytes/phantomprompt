@@ -3,6 +3,7 @@ package mask
 import (
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -79,6 +80,32 @@ func boundary(s string, start, end int) bool {
 		}
 	}
 	return true
+}
+
+func ValidVIN(s string) bool {
+	if len(s) != 17 || !strings.ContainsFunc(s, unicode.IsLetter) {
+		return false
+	}
+	const letters = "ABCDEFGHJKLMNPRSTUVWXYZ"
+	const values = "12345678123457923456789"
+	weights := [...]int{8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2}
+	sum := 0
+	for i, c := range strings.ToUpper(s) {
+		value := int(c - '0')
+		if c < '0' || c > '9' {
+			at := strings.IndexRune(letters, c)
+			if at < 0 {
+				return false
+			}
+			value = int(values[at] - '0')
+		}
+		sum += value * weights[i]
+	}
+	check := byte('0' + sum%11)
+	if sum%11 == 10 {
+		check = 'X'
+	}
+	return strings.ToUpper(s)[8] == check
 }
 
 func ValidPESEL(s string) bool {

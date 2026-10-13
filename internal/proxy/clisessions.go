@@ -245,6 +245,14 @@ func (c *cliRegistry) record(id, service string, update func(*CLISession)) {
 	update(&e.view)
 }
 
+func (c *cliRegistry) linkService(id, service string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if e := c.entries[id]; e != nil && !slices.Contains(e.view.Services, service) {
+		e.view.Services = append(e.view.Services, service)
+	}
+}
+
 func (c *cliRegistry) snapshot() []CLISession {
 	c.mu.Lock()
 	defer c.mu.Unlock()

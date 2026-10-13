@@ -1,10 +1,13 @@
 import { reactive } from "vue";
 import { locked, showLocked } from "./config.js";
+import { ask, tell } from "./dialog.js";
+import { layout } from "./layout.js";
 import { headers } from "./workspace.js";
 
 export const monitor = reactive({
   totals: {},
   events: [],
+  discovery: [],
   protection: true,
   stopped: false,
   updated: null,
@@ -25,6 +28,7 @@ export async function refresh() {
     monitor.totals = totals;
     if (!protectionPending) monitor.protection = totals.protection !== false;
     monitor.events = events.reverse();
+    if (monitor.events.some((event) => event.status >= 400)) monitor.discovery = await loadDiscovery();
     monitor.updated = new Date();
     monitor.error = "";
   } catch (error) {
@@ -34,9 +38,24 @@ export async function refresh() {
   }
 }
 
+async function loadDiscovery() {
+  try {
+    const response = await fetch("/discovery", { headers: headers(), signal: AbortSignal.timeout(10000) });
+    return response.ok ? await response.json() : monitor.discovery;
+  } catch {
+    return monitor.discovery;
+  }
+}
+
 export function startPolling() {
+  let last = Date.now();
   refresh();
-  setInterval(() => { if (!document.hidden && !locked) refresh(); }, 3000);
+  setInterval(() => {
+    const every = document.hidden ? 12000 : layout.compact ? Math.min(2000, layout.barSeconds * 1000) : 3000;
+    if (locked || Date.now() - last < every - 250) return;
+    last = Date.now();
+    refresh();
+  }, 500);
 }
 
 export async function setProtection(on) {
@@ -54,15 +73,19 @@ export async function setProtection(on) {
 }
 
 export async function stopApp() {
-  if (monitor.stopped || !confirm("Stop PhantomPrompt? All protection stops until you start it again with the app icon or phantom open.")) return;
+  if (monitor.stopped || !(await ask({ title: "Stop PhantomPrompt?", message: "All protection stops until you start it again with the app icon or phantom open.", confirm: "Stop", danger: true }))) return;
   try {
     const response = await fetch("/api/shutdown", { method: "POST", headers: headers(), signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error("Could not stop PhantomPrompt.");
     monitor.stopped = true;
   } catch (error) {
-    alert(error.message);
+    await tell({ title: "Could not stop PhantomPrompt", message: error.message });
   }
 }
+
+export const terminalName = (item) => (item.pid ? `${item.label} (pid ${item.pid})` : item.label);
+
+export const confirmCloseTerminal = async (item) => !(item.active || item.disconnected) || ask({ title: `Close the terminal ${terminalName(item)}?`, message: "Everything running in it stops.", confirm: "Close terminal", danger: true });
 
 export async function closeTerminal(id) {
   const response = await fetch("/api/terminal/close", { method: "POST", headers: headers(), body: JSON.stringify({ id }), signal: AbortSignal.timeout(10000) });
@@ -83,6 +106,18 @@ export async function clearEvents() {
   } catch (error) {
     monitor.error = error.message;
   }
+}
+
+export function terminalState(item) {
+  if (item.disconnected) return { text: "Disconnected · PhantomPrompt was restarted, AI requests fail · close it and open a new one", cls: "status-block" };
+  if (item.expired) return { text: "Session expired · restart the command", cls: "status-block" };
+  if (item.active) return { text: "Protected · active", cls: "status-ok" };
+  return { text: "No heartbeat · terminal closed?", cls: "status-warn" };
+}
+
+export function serviceState(item) {
+  if (item.protected) return item.last_seen ? "Protected · active" : "Protected · waiting for traffic";
+  return item.blocked ? "Not supported yet · blocked" : "Not supported yet · not protected";
 }
 
 export const time = (value) => (value ? new Date(value).toLocaleTimeString() : "—");

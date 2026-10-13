@@ -250,3 +250,18 @@ func TestSecondAppTellsItsPanelThatTerminalsUseTheFirst(t *testing.T) {
 		t.Fatalf("first app second_instance %v, second %v", secondInstance(apps[0]), secondInstance(apps[1]))
 	}
 }
+
+func TestPanelCloseTurnsMouseReportingOffOnlyOnATerminal(t *testing.T) {
+	onScreen := closedInPanelNotice(true)
+	for _, mode := range []string{"\033[?1000l", "\033[?1002l", "\033[?1003l", "\033[?1006l", "\033[?2004l", "\033[?25h"} {
+		if !strings.Contains(onScreen, mode) {
+			t.Fatalf("mode %q left on after the panel closed the terminal: %q", mode, onScreen)
+		}
+	}
+	if !strings.HasSuffix(onScreen, "PhantomPrompt: this terminal was closed in the panel.\n") {
+		t.Fatalf("notice %q", onScreen)
+	}
+	if logged := closedInPanelNotice(false); logged != "PhantomPrompt: this terminal was closed in the panel.\n" {
+		t.Fatalf("escape codes would end up in a redirected log: %q", logged)
+	}
+}

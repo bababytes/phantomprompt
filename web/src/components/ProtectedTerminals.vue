@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, ref } from "vue";
 import { terminalLauncher } from "../config.js";
-import { closeTerminal, folderName, monitor, refresh, time, tokenOverhead } from "../monitor.js";
+import { closeTerminal, confirmCloseTerminal, folderName, monitor, refresh, terminalName, terminalState, time, tokenOverhead } from "../monitor.js";
 import { labRequest } from "../workspace.js";
 import FolderBrowser from "./FolderBrowser.vue";
 
@@ -18,7 +18,6 @@ const trustMessage = ref(null);
 
 const homePath = (path) => path.replace(/^\/Users\/[^/]+(?=\/|$)/, "~");
 const count = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-const terminalName = (item) => (item.pid ? `${item.label} (pid ${item.pid})` : item.label);
 
 async function openTerminal(path) {
   opening.value = true;
@@ -69,20 +68,13 @@ async function setTrusted(path, on) {
 }
 
 async function close(item) {
-  if ((item.active || item.disconnected) && !confirm(`Close the terminal ${terminalName(item)}? Everything running in it stops.`)) return;
+  if (!(await confirmCloseTerminal(item))) return;
   message.value = null;
   try {
     await closeTerminal(item.id);
   } catch (failure) {
     message.value = { text: failure.message, kind: "error" };
   }
-}
-
-function state(item) {
-  if (item.disconnected) return { text: "Disconnected · PhantomPrompt was restarted, AI requests fail · close it and open a new one", cls: "status-block" };
-  if (item.expired) return { text: "Session expired · restart the command", cls: "status-block" };
-  if (item.active) return { text: "Protected · active", cls: "status-ok" };
-  return { text: "No heartbeat · terminal closed?", cls: "status-warn" };
 }
 </script>
 
@@ -106,7 +98,7 @@ function state(item) {
             <td class="command">{{ terminalName(item) }}<button v-if="item.pid || item.disconnected" type="button" class="close-terminal" :aria-label="`Close ${terminalName(item)}`" title="Close this terminal" @click="close(item)">×</button></td>
             <td class="folder" :title="item.folder">{{ item.folder ? folderName(item.folder) : "—" }}</td>
             <td class="exceptions"><button v-if="item.folder" type="button" class="text-button" :aria-expanded="trustStart === item.folder" :disabled="trusting" :aria-label="`Trust a folder inside ${folderName(item.folder)}`" :title="`Pick a folder inside ${homePath(item.folder)} whose content is sent without masking, such as test data`" @click="chooseTrusted(item.folder)">Trust…</button></td>
-            <td :class="state(item).cls">{{ state(item).text }}</td>
+            <td :class="terminalState(item).cls">{{ terminalState(item).text }}</td>
             <td>{{ item.services.length ? item.services.join(", ") : "—" }}</td>
             <td :title="`${item.requests ?? 0} AI requests`">{{ item.prompts }}</td>
             <td>{{ item.blocked }}</td>

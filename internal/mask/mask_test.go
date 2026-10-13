@@ -354,3 +354,41 @@ func TestForeignPlaceholdersCountTowardTheSessionBudget(t *testing.T) {
 		t.Fatal("registry kept after the session closed")
 	}
 }
+
+func TestSideChannelsBlockOnlyRealPESELNumbers(t *testing.T) {
+	policy := DefaultPolicy()
+	policy.PESEL = true
+	s := NewSession(4096, 1<<20, policy)
+	if kinds, err := s.Unmasked(`{"system.memory.totalBytes":38654705664}`); err != nil || len(kinds) != 0 {
+		t.Fatalf("a memory size was treated as a PESEL: %v %v", kinds, err)
+	}
+	if kinds, err := s.Unmasked(`{"payload":"` + testPESEL + `"}`); err != nil || len(kinds) != 1 || kinds[0] != "PESEL" {
+		t.Fatalf("a real PESEL passed a side channel: %v %v", kinds, err)
+	}
+	const typo = "00210100005"
+	if _, _, err := s.Mask([]string{"client " + typo}); err != nil {
+		t.Fatal(err)
+	}
+	if kinds, err := s.Unmasked(`{"payload":"` + typo + `"}`); err != nil || len(kinds) != 1 || kinds[0] != "PESEL" {
+		t.Fatalf("a mistyped PESEL from the conversation passed a side channel: %v %v", kinds, err)
+	}
+}
+
+func TestSideChannelsBlockOnlyPlausibleVINs(t *testing.T) {
+	s := NewSession(4096, 1<<20, DefaultPolicy())
+	for _, body := range []string{`{"verdict_confidence":0.98765432109876543}`, `{"id":"deadbeefcafebab17"}`} {
+		if kinds, err := s.Unmasked(body); err != nil || len(kinds) != 0 {
+			t.Fatalf("%s was treated as a VIN: %v %v", body, kinds, err)
+		}
+	}
+	if kinds, err := s.Unmasked(`{"vehicle":"1HGCM82633A004352"}`); err != nil || len(kinds) != 1 || kinds[0] != "VIN" {
+		t.Fatalf("a real VIN passed a side channel: %v %v", kinds, err)
+	}
+	const unchecked = "1HGCM82643A004352"
+	if _, _, err := s.Mask([]string{"vehicle " + unchecked}); err != nil {
+		t.Fatal(err)
+	}
+	if kinds, err := s.Unmasked(`{"vehicle":"` + unchecked + `"}`); err != nil || len(kinds) != 1 || kinds[0] != "VIN" {
+		t.Fatalf("a VIN from the conversation passed a side channel: %v %v", kinds, err)
+	}
+}

@@ -1,5 +1,6 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref, useId } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, useId } from "vue";
+import { layout } from "../layout.js";
 import { monitor, setProtection, stopApp } from "../monitor.js";
 
 const COMMANDS = [
@@ -28,8 +29,10 @@ async function copy(command) {
   }, 2000);
 }
 
-function openTerminal() {
+async function openTerminal() {
   open.value = false;
+  layout.compact = false;
+  await nextTick();
   document.getElementById("section-connect")?.scrollIntoView({ behavior: "smooth", block: "start" });
   const button = document.getElementById("open-terminal");
   if (button && button.getAttribute("aria-expanded") !== "true") button.click();
@@ -95,6 +98,8 @@ onBeforeUnmount(() => {
 .quick-commands code { justify-self: start; border: 0; background: none; padding: 0; color: var(--text); }
 .quick-commands span { font-size: 12px; color: var(--muted); }
 .quick-commands .text-button { flex-shrink: 0; }
+:root[data-theme="light"] .quick-toggle { background: rgb(255 255 255 / .92); box-shadow: 0 10px 26px -14px rgb(0 0 0 / .45); }
+:root[data-theme="light"] .quick-panel { background: rgb(255 255 255 / .97); box-shadow: 0 24px 60px -24px rgb(0 0 0 / .4); }
 @media (max-width: 550px) {
   .quick-actions { right: 16px; bottom: 16px; }
 }

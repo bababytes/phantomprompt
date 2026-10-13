@@ -12,7 +12,9 @@
     "package:macos": "zsh scripts/package-macos.sh",
     "build:web": "vite build",
     "watch:web": "vite build --watch",
-    "update:macos": "zsh scripts/update-macos.sh"
+    "update:macos": "zsh scripts/update-macos.sh",
+    "test:web": "node --test web/tests/*.test.js",
+    "check:panel": "npm run build:web && node scripts/check-panel.mjs"
   },
   "engines": {
     "node": ">=20"

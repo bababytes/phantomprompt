@@ -828,11 +828,20 @@ func (s *Session) Unmasked(text string) ([]string, error) {
 		kinds = append(kinds, "BLOCKED")
 	}
 	for _, m := range matches {
-		if _, known := s.reverse[text[m.Start:m.End]]; !known && !s.files.trustedValue(text[m.Start:m.End]) {
-			kinds = append(kinds, m.Kind)
+		value := text[m.Start:m.End]
+		if _, known := s.reverse[value]; known || s.files.trustedValue(value) {
+			continue
 		}
+		if (m.Kind == "PESEL" && !ValidPESEL(value) || m.Kind == "VIN" && !ValidVIN(value)) && !s.masked(value) {
+			continue
+		}
+		kinds = append(kinds, m.Kind)
 	}
 	return kinds, nil
+}
+
+func (s *Session) masked(value string) bool {
+	return s.forward["text:"+value] != "" || s.forward["json:"+value] != ""
 }
 
 func (s *Session) Originals(text string) []string {

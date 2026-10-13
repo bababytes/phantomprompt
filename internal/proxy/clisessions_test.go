@@ -198,3 +198,20 @@ func TestEngineShutdownEndpoint(t *testing.T) {
 		t.Fatal("shutdown was not requested")
 	}
 }
+
+func TestTerminalShowsItsServiceFromTheFirstRequest(t *testing.T) {
+	app, err := New(Config{Integrations: []string{CopilotCLI}}, localSecret, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer app.Close()
+	app.cliSessions.add("s1", "secret-1", "copilot", 4242)
+	request := httptest.NewRequest(http.MethodGet, "https://api.githubcopilot.com/models", nil)
+	if _, response := app.CLI(request, tunnel{adapter: CopilotCLI, session: "s1"}); response != nil {
+		t.Fatalf("plain GET was answered locally: %d", response.StatusCode)
+	}
+	terminal := app.CLISessions()[0]
+	if !slices.Equal(terminal.Services, []string{"GitHub Copilot CLI"}) || terminal.LastActivity != nil || terminal.Prompts != 0 || terminal.Requests != 0 {
+		t.Fatalf("terminal after its first request %+v", terminal)
+	}
+}

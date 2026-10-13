@@ -441,6 +441,7 @@ func (a *App) CLI(r *http.Request, t tunnel) (*http.Request, *http.Response) {
 	integration := cliIntegrations[adapter]
 	path := normalizedPath(r.URL.Path)
 	a.detected.record(integration.Service, true, func(*Integration) {})
+	a.cliSessions.linkService(t.session, integration.Service)
 	request := Shape{Direction: "request", Method: r.Method, Path: path}
 	block := func(code int, reason, note string) (*http.Request, *http.Response) {
 		request.Note = note

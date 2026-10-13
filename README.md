@@ -104,6 +104,12 @@ phantom claude
 
 The app starts on first use and keeps running after the terminal closes. The panel opens through a one-time link, so open it with `phantom open` or the app icon rather than a bookmark. The browser tab keeps its sign-in until it is closed or PhantomPrompt restarts; no cookie is set, so a new tab needs a new link.
 
+### See it in the panel
+
+![PhantomPrompt compact view: values masked by type, protected terminals connected through PhantomPrompt to AI services, recent activity by category and a live timeline](docs/assets/compact-view.png)
+
+Click **Compact** in the panel header to see everything on one screen: how many values were masked and of which type, which protected terminals talk to which AI service, recent activity split into categories, and a live timeline. Click **Compact** again, or any section in the header, to return to the full panel.
+
 ### Update PhantomPrompt
 
 Check which version you run:

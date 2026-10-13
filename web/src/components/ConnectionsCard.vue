@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue";
-import { monitor, time } from "../monitor.js";
+import { monitor, serviceState, time } from "../monitor.js";
 
 const integrations = computed(() => monitor.totals.integrations ?? []);
 
@@ -8,11 +8,6 @@ const connectionStatus = computed(() => {
   const active = integrations.value.filter((item) => item.last_seen).map((item) => item.service);
   return { text: active.length ? `Traffic seen from: ${active.join(", ")}.` : "Services appear here when their traffic reaches the proxy.", kind: "" };
 });
-
-function state(item) {
-  if (item.protected) return item.last_seen ? "Protected · active" : "Protected · waiting for traffic";
-  return item.blocked ? "Not supported yet · blocked" : "Not supported yet · not protected";
-}
 
 </script>
 
@@ -28,7 +23,7 @@ function state(item) {
         <tbody id="integration-rows">
           <tr v-for="item in integrations" :key="item.service">
             <td>{{ item.service }}</td>
-            <td>{{ state(item) }}</td>
+            <td>{{ serviceState(item) }}</td>
             <td :title="`${item.requests} AI requests`">{{ item.prompts ?? 0 }}</td>
             <td>{{ item.blocked }}</td>
             <td>{{ time(item.last_seen) }}</td>
