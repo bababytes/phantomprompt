@@ -3,17 +3,19 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { kindStyle } from "../events.js";
 import { BAR_SECONDS, layout } from "../layout.js";
 import { time } from "../monitor.js";
-import { timeline } from "./timeline.js";
-import SectionLink from "./SectionLink.vue";
+import { timeline } from "../timeline.js";
+
+const props = defineProps({ sizes: { type: Array, default: () => BAR_SECONDS } });
 
 const SLOTS = 30;
 const duration = (seconds) => (seconds >= 60 ? `${seconds / 60} min` : `${seconds} s`);
-const BUCKET = computed(() => layout.barSeconds * 1000);
+const barSeconds = computed(() => (props.sizes.includes(layout.barSeconds) ? layout.barSeconds : props.sizes[0]));
+const BUCKET = computed(() => barSeconds.value * 1000);
 const WINDOW = computed(() => BUCKET.value * SLOTS);
 const TICK_STEP = { 1: 10, 4: 30, 10: 60, 60: 600 };
 const ticks = computed(() => {
-  const span = layout.barSeconds * SLOTS;
-  const step = TICK_STEP[layout.barSeconds];
+  const span = barSeconds.value * SLOTS;
+  const step = TICK_STEP[barSeconds.value];
   return Array.from({ length: Math.floor(span / step) }, (_, i) => span - i * step).map((seconds) => ({ left: `${100 - (seconds / span) * 100}%`, label: `−${duration(seconds)}` }));
 });
 
@@ -60,7 +62,7 @@ const tip = computed(() => {
 
 const summary = computed(() => {
   const values = buckets.value.reduce((sum, bucket) => sum + bucket.total, 0);
-  return `${values} values masked in the last ${duration(layout.barSeconds * SLOTS)}, peak ${peak.value} values in ${duration(layout.barSeconds)}`;
+  return `${values} values masked in the last ${duration(barSeconds.value * SLOTS)}, peak ${peak.value} values in ${duration(barSeconds.value)}`;
 });
 
 onMounted(() => {
@@ -71,13 +73,13 @@ onBeforeUnmount(() => clearInterval(timer));
 </script>
 
 <template>
-  <article class="workspace-card compact-card bars-card" aria-labelledby="bars-title">
-    <div class="card-head">
-      <h2 id="bars-title">Masked over time</h2>
+  <div class="activity-bars">
+    <div class="bars-head">
+      <slot />
       <div class="bars-controls">
         <span class="card-meta"><b class="bars-blocked-key">▮</b> blocked or failed</span>
         <div class="segmented bar-size" role="group" aria-label="Time per bar">
-          <button v-for="seconds in BAR_SECONDS" :key="seconds" type="button" :class="{ active: layout.barSeconds === seconds }" :aria-pressed="layout.barSeconds === seconds" :title="`${duration(seconds)} per bar`" @click="layout.barSeconds = seconds">{{ duration(seconds) }}</button>
+          <button v-for="size in sizes" :key="size" type="button" :class="{ active: barSeconds === size }" :aria-pressed="barSeconds === size" :title="`${duration(size)} per bar`" @click="layout.barSeconds = size">{{ duration(size) }}</button>
         </div>
       </div>
     </div>
@@ -102,11 +104,11 @@ onBeforeUnmount(() => clearInterval(timer));
     <div class="bars-axis" aria-hidden="true">
       <span v-for="tick in ticks" :key="tick.left" :style="{ left: tick.left }">{{ tick.label }}</span>
     </div>
-    <SectionLink section="section-history" />
-  </article>
+  </div>
 </template>
 
 <style scoped>
+.bars-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; }
 .bars-blocked-key { font-weight: 400; color: var(--danger); }
 .bars-controls { display: flex; align-items: center; gap: 12px; }
 .bar-size { padding: 2px; }

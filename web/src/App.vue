@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import AppHeader from "./components/AppHeader.vue";
 import TotalsOverview from "./components/TotalsOverview.vue";
+import LiveActivity from "./components/LiveActivity.vue";
 import ProtectedTerminals from "./components/ProtectedTerminals.vue";
 import ConnectionsCard from "./components/ConnectionsCard.vue";
 import RulesPanel from "./components/RulesPanel.vue";
@@ -62,6 +63,7 @@ onMounted(() => {
       </div>
       <TotalsOverview />
       <p class="note">Counters include proxy traffic handled by this process, not local previews. One phrase match counts as one interception. Totals reset on restart and with Clear history.</p>
+      <LiveActivity v-if="!layout.compact" />
       <a id="more-details" class="secondary compact history-link" href="#section-history">More details ↓</a>
     </section>
     <section v-show="!layout.compact" id="section-connect" class="page-section" aria-labelledby="section-connect-label">

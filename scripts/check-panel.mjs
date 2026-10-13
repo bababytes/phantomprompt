@@ -125,6 +125,12 @@ async function checkViews(page, url) {
   await run(`[...document.querySelectorAll(".history-search button")].find((button) => button.textContent.trim().startsWith("By prompt")).click()`);
   await sleep(500);
   check("full history lists the demo prompt", (await run(`document.querySelectorAll("#event-rows tr.event-row").length`)) >= 1);
+  check("full view shows the live strip without a Reset button", (await run(`document.querySelector("#live-activity #live-state")?.textContent.includes("Live") && !document.getElementById("compact-reset")`)) === true);
+  check("full view lists the masked data types", (await run(`document.querySelectorAll("#live-types li").length`)) >= 1);
+  const recent = await run(`document.querySelectorAll("#live-activity #activity-rows tr").length`);
+  check("full view shows up to five recent activity rows", recent >= 1 && recent <= 5, `${recent} rows`);
+  check("full view chart shows bars", (await run(`document.querySelectorAll("#live-activity .bars .bar").length`)) >= 1);
+  check("full view offers only bar sizes slower than its refresh", (await run(`[...document.querySelectorAll("#live-activity .bar-size button")].map((button) => button.textContent.trim()).join(",")`)) === "4 s,10 s,1 min");
 
   await run(`document.getElementById("compact-view").click()`);
   await sleep(3500);
@@ -133,8 +139,9 @@ async function checkViews(page, url) {
   check("compact ring lists the masked types", (await run(`document.querySelectorAll(".legend li").length`)) >= 1);
   check("compact view shows the connection map", await visible(".connection-card .map"));
   check("an empty connection map draws no dangling lines", (await run(`document.querySelectorAll(".connection-card .map-links path").length`)) === 0);
-  check("compact activity lists category rows", (await run(`document.querySelectorAll("#compact-event-rows tr").length`)) >= 1);
-  check("compact chart shows bars", (await run(`document.querySelectorAll(".bars .bar").length`)) >= 1);
+  check("compact activity lists category rows", (await run(`document.querySelectorAll("#compact-view-page #activity-rows tr").length`)) >= 1);
+  check("compact chart shows bars", (await run(`document.querySelectorAll("#compact-view-page .bars .bar").length`)) >= 1);
+  check("compact view leaves the full view live card out", (await run(`document.getElementById("live-activity") === null && document.querySelectorAll("#live-state").length === 1`)) === true);
   check("compact telemetry strip is live", (await run(`document.getElementById("live-state")?.textContent.includes("Live")`)) === true);
   for (const [width, height] of [[1440, 900], [1280, 800]]) {
     await size(width, height);
@@ -156,13 +163,25 @@ async function checkViews(page, url) {
   const dialogOpen = await run(`document.getElementById("app-dialog").open`);
   await run(`document.querySelector("#app-dialog button.secondary").click()`);
   await sleep(300);
-  check("reset asks in the app dialog and Cancel keeps the data", dialogOpen && !(await run(`document.getElementById("app-dialog").open`)) && (await run(`document.querySelectorAll("#compact-event-rows tr").length`)) >= 1);
+  check("reset asks in the app dialog and Cancel keeps the data", dialogOpen && !(await run(`document.getElementById("app-dialog").open`)) && (await run(`document.querySelectorAll("#compact-view-page #activity-rows tr").length`)) >= 1);
 
   await run(`[...document.querySelectorAll(".section-nav a")].find((link) => link.textContent === "History").click()`);
   await sleep(1200);
   check("a section link leaves the compact view", !(await visible("#compact-view-page")) && (await visible("#section-history")));
   check("the full view stays dark", (await run(`document.documentElement.dataset.theme`)) === "dark");
   check("all five sections are back", (await sectionsVisible()) === 5);
+
+  await run(`document.getElementById("clear-events").click()`);
+  await sleep(300);
+  const clearAsks = await run(`document.getElementById("app-dialog").open`);
+  await run(`document.querySelector("#app-dialog button.secondary").click()`);
+  await sleep(300);
+  check("Clear history asks first and Cancel keeps the history", clearAsks && (await run(`document.querySelectorAll("#live-activity #activity-rows tr").length`)) >= 1);
+  await run(`document.getElementById("clear-events").click()`);
+  await sleep(300);
+  await run(`document.querySelector("#app-dialog .danger-button").click()`);
+  await sleep(1500);
+  check("confirmed Clear history empties the activity, types and chart", (await run(`document.querySelectorAll("#live-activity #activity-rows tr").length + document.querySelectorAll("#live-types li").length + document.querySelectorAll("#live-activity .bars .bar").length`)) === 0);
   check("no JavaScript errors", page.errors.length === 0, page.errors.slice(0, 3).join(" | "));
 }
 

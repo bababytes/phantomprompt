@@ -227,6 +227,9 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .compact-card .card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; }
 .workspace-card.compact-card h2 { font-size: 15px; }
 .card-meta { font: 11px/1.4 var(--mono); color: var(--faint); text-align: right; }
+.kind-chip { display: inline-flex; align-items: center; gap: 5px; margin: 2px 5px 2px 0; padding: 1px 8px 1px 7px; border: 1px solid color-mix(in srgb, var(--kind) 45%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--kind) 12%, transparent); font: 11px/16px var(--sans); color: var(--text); white-space: nowrap; }
+.kind-chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--kind); }
+.kind-chip b { font: 500 11px/16px var(--mono); }
 .section-link, .workspace-card .section-link { position: absolute; right: 9px; bottom: 9px; z-index: 3; display: grid; place-items: center; width: 24px; height: 24px; margin: 0; padding: 0; border: 1px solid var(--line-strong); border-radius: 50%; background: rgb(15 18 17 / .94); color: var(--faint); box-shadow: 0 6px 16px -8px rgb(0 0 0 / .9); transition: color .2s, border-color .2s, box-shadow .2s, transform .2s; }
 .section-link svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 :root[data-theme="light"] .workspace-card { box-shadow: 0 1px 2px rgb(0 0 0 / .04), 0 14px 30px -22px rgb(0 0 0 / .35); }

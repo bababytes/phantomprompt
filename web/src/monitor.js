@@ -47,11 +47,13 @@ async function loadDiscovery() {
   }
 }
 
+export const FULL_VIEW_POLL_MS = 3000;
+
 export function startPolling() {
   let last = Date.now();
   refresh();
   setInterval(() => {
-    const every = document.hidden ? 12000 : layout.compact ? Math.min(2000, layout.barSeconds * 1000) : 3000;
+    const every = document.hidden ? 12000 : layout.compact ? Math.min(2000, layout.barSeconds * 1000) : FULL_VIEW_POLL_MS;
     if (locked || Date.now() - last < every - 250) return;
     last = Date.now();
     refresh();
@@ -99,6 +101,7 @@ export async function showLogFolder() {
 }
 
 export async function clearEvents() {
+  if (!(await ask({ title: "Clear the history and reset all counters?", message: "Protection, rules and open terminals stay as they are; the daily log is kept.", confirm: "Clear and reset", danger: true }))) return;
   try {
     const response = await fetch("/events", { method: "DELETE", headers: headers(), signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error("Cannot clear request history.");

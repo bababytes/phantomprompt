@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from "vue";
 import { kindStyle } from "../events.js";
-import { kindTotals } from "./data.js";
+import { kindTotals } from "../activity.js";
 import { monitor } from "../monitor.js";
 import SectionLink from "./SectionLink.vue";
 

@@ -1,10 +1,11 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { blockedSince } from "../activity.js";
 import { SERVICES, maskedCount, quietBlock } from "../events.js";
-import { blockedSince } from "./data.js";
-import { ask } from "../dialog.js";
 import { clearEvents, monitor } from "../monitor.js";
-import { clearTimeline, timeline } from "./timeline.js";
+import { timeline } from "../timeline.js";
+
+defineProps({ reset: { type: Boolean, default: false } });
 
 const HOUR = 60 * 60 * 1000;
 const now = ref(Date.now());
@@ -33,12 +34,6 @@ function ago(time) {
   return `on ${new Date(time).toLocaleDateString()}`;
 }
 
-async function reset() {
-  if (!(await ask({ title: "Clear the history and reset all counters?", message: "Protection, rules and open terminals stay as they are; the daily log is kept.", confirm: "Clear and reset", danger: true }))) return;
-  await clearEvents();
-  clearTimeline();
-}
-
 const recent = (item, ms) => Boolean(item) && now.value - new Date(item.time).getTime() < ms;
 
 onMounted(() => {
@@ -57,7 +52,7 @@ onBeforeUnmount(() => clearInterval(timer));
     </span>
     <span id="live-blocked" class="strip-cell blocked" :class="{ hot: blocked > 0, fresh: recent(lastBlocked, 60000) }" :title="`Blocked or failed AI traffic; stopped telemetry is listed in Recent activity but not counted here${lastBlocked ? ` · last blocked ${ago(lastBlocked.time)}` : ''}`"><b>{{ blocked }}</b> blocked · last hour</span>
     <span id="live-overhead" class="strip-cell" title="Average time PhantomPrompt adds to mask a request and restore the reply">Avg overhead <b>{{ overhead }}</b></span>
-    <button id="compact-reset" type="button" class="strip-reset" title="Clear the history and reset all counters" :disabled="monitor.stopped" @click="reset"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 6.2A5 5 0 1 1 3 9.6M3.2 2.8v3.4h3.4" /></svg>Reset</button>
+    <button v-if="reset" id="compact-reset" type="button" class="strip-reset" title="Clear the history and reset all counters" :disabled="monitor.stopped" @click="clearEvents"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 6.2A5 5 0 1 1 3 9.6M3.2 2.8v3.4h3.4" /></svg>Reset</button>
   </div>
 </template>
 

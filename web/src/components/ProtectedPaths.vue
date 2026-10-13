@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, ref } from "vue";
+import { folderTotals } from "../activity.js";
 import { monitor } from "../monitor.js";
 import { applyRules, workspace } from "../workspace.js";
 import FolderBrowser from "./FolderBrowser.vue";
@@ -10,6 +11,7 @@ const browsing = ref(false);
 const browseButton = ref(null);
 
 const statuses = computed(() => new Map((monitor.totals.protected_paths ?? []).map((status) => [status.path, status])));
+const reached = computed(() => folderTotals(monitor.events));
 
 function describe(path) {
   const status = statuses.value.get(path);
@@ -89,6 +91,8 @@ function setBlocked(path, on) {
       <li v-for="path in workspace.protectedPaths" :key="path" class="chip custom">
         <span>{{ path }}</span>
         <small :class="describe(path).cls">{{ describe(path).text }}</small>
+        <small v-if="reached.get(path)?.masked" class="reach-masked" title="Times the AI got lines of this folder, masked, in the prompt history">AI masked ×{{ reached.get(path).masked }}</small>
+        <small v-if="reached.get(path)?.blocked" class="reach-blocked" title="Times the AI reached for this folder and was blocked, in the prompt history">AI blocked ×{{ reached.get(path).blocked }}</small>
         <span class="modes" role="group" :aria-label="`Protection for ${path}`">
           <button class="mode" :aria-pressed="!blocked(path)" title="Masked: lines become tokens and are restored in answers." :disabled="workspace.working" @click="setBlocked(path, false)">Masked</button>
           <button class="mode blocked" :aria-pressed="blocked(path)" title="Blocked: the AI is told not to read it, and any content that still leaks is removed (stronger than masking)." :disabled="workspace.working" @click="setBlocked(path, true)">Blocked</button>
@@ -109,5 +113,7 @@ function setBlocked(path, on) {
 </template>
 
 <style scoped>
+.chip .reach-masked { color: var(--accent); }
+.chip .reach-blocked { color: var(--danger); }
 input.invalid { border-color: var(--danger); outline-color: var(--danger); }
 </style>
