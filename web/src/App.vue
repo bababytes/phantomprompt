@@ -56,6 +56,7 @@ onMounted(() => {
       </div>
       <TotalsOverview />
       <p class="note">Counters include proxy traffic handled by this process, not local previews. One phrase match counts as one interception. Totals reset on restart and with Clear history.</p>
+      <a id="more-details" class="secondary compact history-link" href="#section-history">More details ↓</a>
     </section>
     <section id="section-connect" class="page-section" aria-labelledby="section-connect-label">
       <p id="section-connect-label" class="section-label">Connect</p>
