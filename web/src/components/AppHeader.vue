@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { GHOST_EYE_RADIUS, GHOST_EYES, GHOST_PATH } from "../ghost.js";
-import { SECTIONS, layout, showSection } from "../layout.js";
+import { PANELS, SECTIONS, layout, showSection } from "../layout.js";
 import { monitor, setProtection, stopApp } from "../monitor.js";
 
 const current = ref(SECTIONS[0].id);
@@ -23,7 +23,7 @@ async function toggle(event) {
 
 function go(event, id) {
   current.value = id;
-  if (!layout.compact) return;
+  if (!layout.compact && !PANELS.includes(id)) return;
   event.preventDefault();
   showSection(id);
 }
@@ -94,7 +94,7 @@ onBeforeUnmount(() => {
         <label class="switch" :class="{ live: engine.state === 'live' && monitor.protection, down: engine.state === 'down' }" :title="engine.text"><input id="protection" type="checkbox" :checked="monitor.protection" aria-describedby="engine-state" @change="toggle"> <span id="protection-state" :class="{ off: !monitor.protection }">{{ monitor.protection ? "Protection on" : "Protection OFF" }}</span></label>
         <span id="engine-state" class="sr-only">{{ engine.text }}</span>
         <button id="stop-app" class="secondary compact" title="Stop PhantomPrompt" :disabled="monitor.stopped" @click="stopApp">Stop</button>
-        <button v-if="layout.compact" id="theme-toggle" type="button" class="secondary compact theme-toggle" :aria-pressed="layout.light" aria-label="Light mode" :title="layout.light ? 'Switch to dark mode' : 'Switch to light mode'" @click="layout.light = !layout.light">
+        <button id="theme-toggle" type="button" class="secondary compact theme-toggle" :aria-pressed="layout.light" aria-label="Light mode" :title="layout.light ? 'Switch to dark mode' : 'Switch to light mode'" @click="layout.light = !layout.light">
           <svg v-if="layout.light" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.4 9.7A5.6 5.6 0 0 1 6.3 2.6a5.6 5.6 0 1 0 7.1 7.1Z" /></svg>
           <svg v-else viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.9" /><path d="M8 1.6v1.5M8 12.9v1.5M1.6 8h1.5M12.9 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M3.5 12.5l1-1M11.5 4.5l1-1" /></svg>
         </button>
@@ -120,7 +120,7 @@ onBeforeUnmount(() => {
 .brand-tagline { overflow: hidden; font: 500 10px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); white-space: nowrap; text-overflow: ellipsis; }
 
 .section-nav { position: relative; }
-.section-nav::before { content: ""; position: absolute; top: 3px; bottom: 3px; left: var(--pill-x); width: var(--pill-width); border-radius: 999px; background: rgb(255 255 255 / .07); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .12), 0 0 18px -8px rgb(255 255 255 / .35); transition: left .4s cubic-bezier(.2, .8, .2, 1), width .4s cubic-bezier(.2, .8, .2, 1), opacity .3s; }
+.section-nav::before { content: ""; position: absolute; top: 3px; bottom: 3px; left: var(--pill-x); width: var(--pill-width); border-radius: 999px; background: rgb(var(--ink-rgb) / .07); box-shadow: inset 0 0 0 1px rgb(var(--ink-rgb) / .12), 0 0 18px -8px rgb(var(--ink-rgb) / .35); transition: left .4s cubic-bezier(.2, .8, .2, 1), width .4s cubic-bezier(.2, .8, .2, 1), opacity .3s; }
 .section-nav.idle::before { opacity: 0; }
 .section-nav > a { position: relative; z-index: 1; }
 .section-nav > a.active { background: none; color: var(--text); }

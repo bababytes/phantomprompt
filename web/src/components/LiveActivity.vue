@@ -2,10 +2,9 @@
 import { computed } from "vue";
 import { kindTotals } from "../activity.js";
 import { kindStyle } from "../events.js";
-import { BAR_SECONDS } from "../layout.js";
+import { BAR_SECONDS, showSection } from "../layout.js";
 import { FULL_VIEW_POLL_MS, monitor } from "../monitor.js";
 import ActivityBars from "./ActivityBars.vue";
-import LiveStatus from "./LiveStatus.vue";
 import RecentActivity from "./RecentActivity.vue";
 
 const RECENT = 5;
@@ -20,9 +19,9 @@ const prompts = computed(() => `${monitor.events.length} prompt${monitor.events.
 <template>
   <article id="live-activity" class="workspace-card live-card" aria-labelledby="live-activity-title">
     <div class="section-heading">
-      <div><p class="eyebrow">RIGHT NOW</p><h2 id="live-activity-title">Live activity</h2></div>
+      <div><h2 id="live-activity-title">Live activity</h2></div>
+      <div><button id="more-details" type="button" class="secondary compact history-link" @click="showSection('section-history')">More details ↓</button></div>
     </div>
-    <LiveStatus class="live-strip-row" />
     <div class="live-part">
       <div class="live-part-head"><h3 id="live-types-title">Masked by data type</h3><span class="card-meta" title="Unique values, counted from the prompt history kept in memory">{{ total.toLocaleString() }} unique values</span></div>
       <ul v-if="kinds.length" id="live-types" class="live-types" aria-labelledby="live-types-title">
@@ -41,9 +40,8 @@ const prompts = computed(() => `${monitor.events.length} prompt${monitor.events.
 </template>
 
 <style scoped>
-.live-card { margin: 28px 0 16px; }
-.live-strip-row { margin-top: 18px; }
-.live-part { margin-top: 26px; }
+.live-card { position: relative; margin: 0 0 16px; }
+.live-part { margin-top: 22px; }
 .live-part-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 12px; }
 .live-card h3 { margin: 0; font-size: 14px; font-weight: 500; color: var(--text); }
 .live-types { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }

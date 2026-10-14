@@ -132,7 +132,7 @@ async function close(item) {
 .folder { font-family: var(--mono); max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
 .command { white-space: nowrap; }
 .close-terminal { margin: 0 0 0 6px; width: 22px; height: 22px; display: inline-grid; place-items: center; vertical-align: middle; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 14px; line-height: 1; }
-.close-terminal:hover { background: rgb(255 255 255 / .08); color: var(--text); }
+.close-terminal:hover { background: rgb(var(--ink-rgb) / .08); color: var(--text); }
 .exceptions { white-space: nowrap; }
 .exceptions button { margin: 0; padding: 2px 6px; color: var(--muted); text-decoration: underline 1px var(--line-strong); text-underline-offset: 3px; }
 .exceptions button:hover:enabled, .exceptions button[aria-expanded=true] { color: var(--text); }

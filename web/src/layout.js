@@ -3,7 +3,9 @@ import { nextTick, reactive, watch, watchEffect } from "vue";
 const STORAGE = "phantomprompt.compactView";
 const THEME = "phantomprompt.theme";
 const BAR = "phantomprompt.barSeconds";
+const PANEL = "phantomprompt.openPanel";
 export const BAR_SECONDS = [1, 4, 10, 60];
+export const PANELS = ["section-rules", "section-test", "section-history"];
 
 export const SECTIONS = [
   { id: "section-status", label: "Status" },
@@ -38,7 +40,23 @@ function loadBar() {
   }
 }
 
-export const layout = reactive({ compact: load(), light: loadTheme(), barSeconds: loadBar() });
+function loadPanel() {
+  try {
+    const panel = localStorage.getItem(PANEL);
+    return PANELS.includes(panel) ? panel : null;
+  } catch {
+    return null;
+  }
+}
+
+export const layout = reactive({ compact: load(), light: loadTheme(), barSeconds: loadBar(), panel: loadPanel() });
+
+watch(() => layout.panel, (panel) => {
+  try {
+    if (panel) localStorage.setItem(PANEL, panel);
+    else localStorage.removeItem(PANEL);
+  } catch {}
+});
 
 watch(() => layout.barSeconds, (seconds) => {
   try {
@@ -47,7 +65,7 @@ watch(() => layout.barSeconds, (seconds) => {
 });
 
 watchEffect(() => {
-  document.documentElement.dataset.theme = layout.compact && layout.light ? "light" : "dark";
+  document.documentElement.dataset.theme = layout.light ? "light" : "dark";
 });
 
 watch(() => layout.light, (on) => {
@@ -65,6 +83,7 @@ watch(() => layout.compact, (on) => {
 
 export async function showSection(id) {
   layout.compact = false;
+  if (PANELS.includes(id)) layout.panel = id;
   await nextTick();
-  document.getElementById(id)?.scrollIntoView({ block: "start" });
+  document.getElementById(PANELS.includes(id) ? "section-more" : id)?.scrollIntoView({ block: "start" });
 }

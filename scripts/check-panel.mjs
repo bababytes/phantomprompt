@@ -112,7 +112,8 @@ async function checkViews(page, url) {
   const sections = ["section-status", "section-connect", "section-rules", "section-test", "section-history"];
   const sectionsVisible = () => run(`${JSON.stringify(sections)}.filter((id) => document.getElementById(id)?.offsetParent !== null).length`);
 
-  check("full view shows all five sections", (await sectionsVisible()) === 5);
+  const openPanels = () => run(`["section-rules", "section-test", "section-history"].filter((id) => document.getElementById(id)?.offsetParent !== null)`);
+  check("full view shows Status and Connect with Rules, Test and History closed under tiles", (await sectionsVisible()) === 2 && (await run(`document.querySelectorAll(".section-tile").length`)) === 3 && (await openPanels()).length === 0);
   check("full view shows the totals", await visible("#total-masked"));
   check("full view keeps the header navigation", (await run(`document.querySelectorAll(".section-nav a").length`)) === 5);
 
@@ -122,15 +123,25 @@ async function checkViews(page, url) {
   for (let attempt = 0; attempt < 40 && (await run(`document.getElementById("send").disabled`)); attempt++) await sleep(250);
   await run(`document.getElementById("close-demo").click()`);
   await sleep(3500);
+  check("the History tile counts the new prompt", (await run(`document.querySelector("#tile-section-history .tile-badge")?.textContent.trim()`)) === "1 new");
+  await run(`document.getElementById("more-details").click()`);
+  await sleep(800);
+  check("More details opens the History panel and clears its new count", (await openPanels()).join() === "section-history" && !(await run(`document.querySelector("#tile-section-history .tile-badge")`)));
   await run(`[...document.querySelectorAll(".history-search button")].find((button) => button.textContent.trim().startsWith("By prompt")).click()`);
   await sleep(500);
   check("full history lists the demo prompt", (await run(`document.querySelectorAll("#event-rows tr.event-row").length`)) >= 1);
-  check("full view shows the live strip without a Reset button", (await run(`document.querySelector("#live-activity #live-state")?.textContent.includes("Live") && !document.getElementById("compact-reset")`)) === true);
+  check("full view shows the live strip without a Reset button", (await run(`document.querySelector("#section-status .first-screen #live-state")?.textContent.includes("Live") && !document.getElementById("compact-reset")`)) === true);
   check("full view lists the masked data types", (await run(`document.querySelectorAll("#live-types li").length`)) >= 1);
   const recent = await run(`document.querySelectorAll("#live-activity #activity-rows tr").length`);
   check("full view shows up to five recent activity rows", recent >= 1 && recent <= 5, `${recent} rows`);
   check("full view chart shows bars", (await run(`document.querySelectorAll("#live-activity .bars .bar").length`)) >= 1);
   check("full view offers only bar sizes slower than its refresh", (await run(`[...document.querySelectorAll("#live-activity .bar-size button")].map((button) => button.textContent.trim()).join(",")`)) === "4 s,10 s,1 min");
+  await run(`[...document.querySelectorAll(".section-nav a")].find((link) => link.textContent === "Rules").click()`);
+  await sleep(800);
+  check("the Rules link opens only the Rules panel", (await openPanels()).join() === "section-rules" && (await run(`document.getElementById("tile-section-rules").getAttribute("aria-expanded")`)) === "true");
+  await run(`document.getElementById("tile-section-rules").click()`);
+  await sleep(300);
+  check("a second click on an open tile closes it", (await openPanels()).length === 0);
 
   await run(`document.getElementById("compact-view").click()`);
   await sleep(3500);
@@ -168,8 +179,8 @@ async function checkViews(page, url) {
   await run(`[...document.querySelectorAll(".section-nav a")].find((link) => link.textContent === "History").click()`);
   await sleep(1200);
   check("a section link leaves the compact view", !(await visible("#compact-view-page")) && (await visible("#section-history")));
-  check("the full view stays dark", (await run(`document.documentElement.dataset.theme`)) === "dark");
-  check("all five sections are back", (await sectionsVisible()) === 5);
+  check("the light theme stays on in the full view", (await run(`document.documentElement.dataset.theme`)) === "light");
+  check("Status, Connect and the History panel are back", (await sectionsVisible()) === 3 && (await openPanels()).join() === "section-history");
 
   await run(`document.getElementById("clear-events").click()`);
   await sleep(300);
