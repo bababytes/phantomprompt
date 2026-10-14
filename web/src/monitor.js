@@ -118,11 +118,6 @@ export function terminalState(item) {
   return { text: "No heartbeat · terminal closed?", cls: "status-warn" };
 }
 
-export function serviceState(item) {
-  if (item.protected) return item.last_seen ? "Protected · active" : "Protected · waiting for traffic";
-  return item.blocked ? "Not supported yet · blocked" : "Not supported yet · not protected";
-}
-
 export const time = (value) => (value ? new Date(value).toLocaleTimeString() : "—");
 
 export function folderName(path) {

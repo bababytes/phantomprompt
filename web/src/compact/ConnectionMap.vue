@@ -2,7 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { terminalActivity, terminalTitle } from "./data.js";
 import { GHOST_EYE_RADIUS, GHOST_EYES, GHOST_PATH } from "../ghost.js";
-import { closeTerminal, confirmCloseTerminal, folderName, monitor, serviceState, terminalName, terminalState, time } from "../monitor.js";
+import { closeTerminal, confirmCloseTerminal, folderName, monitor, terminalName, terminalState, time } from "../monitor.js";
+import { serviceActive, serviceState } from "../services.js";
 import { tell } from "../dialog.js";
 import ActivitySpark from "./ActivitySpark.vue";
 import SectionLink from "./SectionLink.vue";
@@ -48,9 +49,9 @@ const services = computed(() => {
   const all = [...known, ...extra];
   const prompts = all.reduce((sum, item) => sum + (item.prompts ?? 0), 0);
   return all.map((item) => {
-    const dot = item.protected ? (item.last_seen ? "live" : "idle") : item.blocked ? "blocked" : "open";
-    const state = serviceState(item);
-    return { ...item, dot, state, short: state.split(" · ").at(-1), share: prompts ? Math.round(((item.prompts ?? 0) / prompts) * 100) : 0 };
+    const dot = item.protected ? (item.last_seen && serviceActive(item, sessions.value) ? "live" : "idle") : item.blocked ? "blocked" : "open";
+    const state = serviceState(item, sessions.value);
+    return { ...item, dot, state, short: state.text.split(" · ").at(-1), share: prompts ? Math.round(((item.prompts ?? 0) / prompts) * 100) : 0 };
   });
 });
 
@@ -152,7 +153,7 @@ onBeforeUnmount(() => observer?.disconnect());
         <div v-if="!terminals.length" class="node terminal empty" :style="place(0, 1)"><span>No protected terminal yet. Run <code>phantom</code> in a terminal.</span></div>
         </div>
         <div class="map-side services" :style="{ height: `${height}px` }">
-        <div v-for="(item, index) in services" :key="item.service" class="node service" :class="{ dim: !lit('service', index) }" :style="place(index, services.length)" :title="`${item.state} · last seen ${time(item.last_seen)}`" @mouseenter="hover = { kind: 'service', index }" @mouseleave="hover = null">
+        <div v-for="(item, index) in services" :key="item.service" class="node service" :class="{ dim: !lit('service', index) }" :style="place(index, services.length)" :title="`${item.state.text} · last seen ${time(item.last_seen)}`" @mouseenter="hover = { kind: 'service', index }" @mouseleave="hover = null">
           <div class="node-line"><i class="dot" :class="item.dot" aria-hidden="true"></i><strong>{{ item.service }}</strong><span class="pill" :class="item.dot">{{ item.short }}</span></div>
           <div class="node-meta">{{ count(item.requests, "request") }} · {{ count(item.prompts, "prompt") }}<template v-if="item.blocked"> · <b class="status-block">{{ item.blocked }} blocked</b></template></div>
           <div class="node-line node-share"><span class="share-bar" aria-hidden="true"><span :style="{ width: `${item.share}%` }"></span></span><small>{{ item.share }}% of prompts</small></div>
