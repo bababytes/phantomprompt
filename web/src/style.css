@@ -80,8 +80,7 @@ a { color: var(--accent); }
 .first-screen { display: flex; flex-direction: column; min-height: calc(100svh - var(--first-screen-top, 0px) - 64px); }
 .first-screen-strip { margin-top: 14px; }
 .first-screen-strip + .note { margin-bottom: 8px; }
-#section-live { margin-top: 24px; border-top: 0; }
-#section-live::before { content: none; }
+#section-live { margin-top: 24px; }
 .first-screen > .overview { margin-top: auto; }
 @media (min-width: 1240px) and (max-height: 760px) {
   #section-status { padding-top: 28px; }
