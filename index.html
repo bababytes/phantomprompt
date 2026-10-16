@@ -150,7 +150,7 @@ footer p { margin-bottom: 6px; }
     <a class="button primary" href="https://github.com/babadistrict/phantomprompt/releases/latest">Download for macOS</a>
     <a class="button" href="https://github.com/babadistrict/phantomprompt">View on GitHub</a>
   </div>
-  <p class="muted">Free and open source (Apache-2.0) · Claude Code · Codex CLI · GitHub Copilot CLI</p>
+  <p class="muted">Free and open source (Apache-2.0) · Works with Claude Code, Codex CLI and GitHub Copilot CLI</p>
   <img class="hero-gif" src="assets/pipeline.gif" width="720" alt="Animation: values typed in a terminal, such as a VIN and an e-mail address, pass through PhantomPrompt and reach the AI provider as placeholders">
 </header>
 
@@ -213,7 +213,7 @@ footer p { margin-bottom: 6px; }
 
 <section>
   <div class="wrap">
-    <h2>Get started in 3 steps</h2>
+    <h2>Get started in 4 steps</h2>
     <ol class="steps">
       <li>
         <span class="step-number">1</span>
@@ -225,21 +225,31 @@ footer p { margin-bottom: 6px; }
       <li>
         <span class="step-number">2</span>
         <div>
-          <h3>Set up once</h3>
-          <p>Paste this into Terminal, then open a new terminal window.</p>
+          <h3>Allow it once</h3>
+          <p>macOS blocks apps that Apple has not checked yet. Allow PhantomPrompt with one command in Terminal:</p>
           <div class="command">
-            <pre><code>xattr -dr com.apple.quarantine /Applications/PhantomPrompt.app
-echo 'alias phantom=/Applications/PhantomPrompt.app/Contents/MacOS/phantomprompt' &gt;&gt; ~/.zshrc</code></pre>
+            <pre><code>xattr -dr com.apple.quarantine /Applications/PhantomPrompt.app</code></pre>
             <button class="copy" type="button">Copy</button>
           </div>
           <details>
             <summary>What does it do?</summary>
-            <p>PhantomPrompt is not notarized by Apple yet, so macOS blocks it on first start. The first line removes the "downloaded from the internet" mark from this one app. The second adds the <code>phantom</code> command to your shell.</p>
+            <p>PhantomPrompt is not notarized by Apple yet. This command removes the "downloaded from the internet" mark from this one app, so macOS lets it start.</p>
           </details>
         </div>
       </li>
       <li>
         <span class="step-number">3</span>
+        <div>
+          <h3>Add the <code>phantom</code> command</h3>
+          <p>Paste this into Terminal, then open a new terminal window.</p>
+          <div class="command">
+            <pre><code>echo 'alias phantom=/Applications/PhantomPrompt.app/Contents/MacOS/phantomprompt' &gt;&gt; ~/.zshrc</code></pre>
+            <button class="copy" type="button">Copy</button>
+          </div>
+        </div>
+      </li>
+      <li>
+        <span class="step-number">4</span>
         <div>
           <h3>Start your agent with <code>phantom</code></h3>
           <pre><code>phantom claude
