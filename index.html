@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhantomPrompt – keep secrets out of AI coding agent prompts (macOS)</title>
+<meta name="description" content="PhantomPrompt masks secrets and personal data (API keys, passwords, e-mails, VINs, GUIDs) before Claude Code, Codex CLI or GitHub Copilot CLI send them to the model, and puts the real values back into the answer. Local, open source, macOS.">
+<link rel="canonical" href="https://babadistrict.github.io/phantomprompt/">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="theme-color" content="#0d1117">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="PhantomPrompt">
+<meta property="og:title" content="PhantomPrompt – keep secrets out of your coding agent's prompts">
+<meta property="og:description" content="The model sees placeholders. You get the real values back. Works with Claude Code, Codex CLI and GitHub Copilot CLI on macOS.">
+<meta property="og:url" content="https://babadistrict.github.io/phantomprompt/">
+<meta property="og:image" content="https://babadistrict.github.io/phantomprompt/assets/compact-view.png">
+<meta property="og:image:alt" content="PhantomPrompt panel: masked values by type, protected terminals and a live timeline">
+<meta name="twitter:card" content="summary_large_image">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "PhantomPrompt",
+  "description": "Masks secrets and personal data before AI coding agents send them to a model, and puts the real values back into the answer.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS",
+  "url": "https://babadistrict.github.io/phantomprompt/",
+  "downloadUrl": "https://github.com/babadistrict/phantomprompt/releases/latest",
+  "codeRepository": "https://github.com/babadistrict/phantomprompt",
+  "license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "image": "https://babadistrict.github.io/phantomprompt/assets/icon-256.png",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "BaBa", "url": "https://github.com/babadistrict" }
+}
+</script>
+
+<style>
+:root {
+  --bg: #ffffff;
+  --bg-alt: #f6f8fa;
+  --fg: #1f2328;
+  --muted: #59636e;
+  --border: #d1d9e0;
+  --accent: #6e40c9;
+  --accent-fg: #ffffff;
+  --code-bg: #f0f2f5;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117;
+    --bg-alt: #151b23;
+    --fg: #e6edf3;
+    --muted: #9198a1;
+    --border: #3d444d;
+    --accent: #a371f7;
+    --accent-fg: #0d1117;
+    --code-bg: #1f2630;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117;
+  --bg-alt: #151b23;
+  --fg: #e6edf3;
+  --muted: #9198a1;
+  --border: #3d444d;
+  --accent: #a371f7;
+  --accent-fg: #0d1117;
+  --code-bg: #1f2630;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); }
+img { max-width: 100%; height: auto; }
+code, pre { font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+pre { background: var(--code-bg); padding: 12px 14px; border-radius: 8px; overflow-x: auto; margin: 8px 0 0; }
+pre code { background: none; padding: 0; }
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+section { padding: 56px 0; border-top: 1px solid var(--border); }
+h1, h2, h3 { line-height: 1.25; margin: 0 0 12px; }
+h1 { font-size: clamp(32px, 6vw, 48px); }
+h2 { font-size: 28px; }
+h3 { font-size: 18px; }
+p { margin: 0 0 12px; }
+.muted { color: var(--muted); }
+
+header { text-align: center; padding: 56px 0 40px; }
+header .icon { width: 112px; height: 112px; }
+.tagline { font-size: 22px; margin: 8px 0 4px; }
+.buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 24px 0 8px; }
+.button {
+  display: inline-block; padding: 12px 22px; border-radius: 8px; font-weight: 600;
+  text-decoration: none; border: 1px solid var(--border); color: var(--fg); background: var(--bg-alt);
+}
+.button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.hero-gif { display: block; margin: 32px auto 0; width: 720px; border-radius: 10px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; }
+.card { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+.card p { margin: 0; color: var(--muted); }
+.diagram { background: #ffffff; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 20px 0; }
+.diagram img { display: block; width: 100%; }
+.shot { display: block; margin: 20px auto 0; border-radius: 10px; border: 1px solid var(--border); }
+
+table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 15px; }
+.table-scroll { overflow-x: auto; }
+
+ol.steps { padding-left: 20px; }
+ol.steps li { margin-bottom: 18px; }
+ul.points { padding-left: 20px; }
+ul.points li { margin-bottom: 8px; }
+
+details { border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-top: 10px; background: var(--bg-alt); }
+summary { cursor: pointer; font-weight: 600; }
+details p { margin: 10px 0 0; }
+
+footer { border-top: 1px solid var(--border); padding: 32px 0 48px; font-size: 15px; color: var(--muted); }
+footer p { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <img class="icon" src="assets/icon-256.png" alt="PhantomPrompt icon" width="112" height="112">
+  <h1>PhantomPrompt</h1>
+  <p class="tagline">Keep secrets and personal data out of your coding agent's prompts.</p>
+  <p class="muted"><strong>The model sees placeholders. You get the real values back.</strong></p>
+  <div class="buttons">
+    <a class="button primary" href="https://github.com/babadistrict/phantomprompt/releases/latest">Download for macOS</a>
+    <a class="button" href="https://github.com/babadistrict/phantomprompt">View on GitHub</a>
+  </div>
+  <p class="muted">Free and open source (Apache-2.0) · Claude Code · Codex CLI · GitHub Copilot CLI</p>
+  <img class="hero-gif" src="assets/pipeline.gif" width="720" alt="Animation: values typed in a terminal, such as a VIN and an e-mail address, pass through PhantomPrompt and reach the AI provider as placeholders">
+</header>
+
+<main>
+<section>
+  <div class="wrap">
+    <h2>What it does</h2>
+    <p>PhantomPrompt replaces sensitive values (VINs, e-mail addresses, GUIDs, labelled fields, secrets, your own patterns) with placeholders before AI coding agents send them to a model, and puts the real values back into the answer.</p>
+    <p>It runs on your Mac and masks values before they leave it. The token map lives in memory only and is never written to disk.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Who it's for</h2>
+    <p>Developers who let an AI coding agent work in the terminal, where it reads more than you see.</p>
+    <div class="cards">
+      <div class="card">
+        <h3>Large codebases</h3>
+        <p>The agent opens files on its own: configs, fixtures, SQL dumps, <code>.env</code> files. Nobody checks each file before it goes into the prompt.</p>
+      </div>
+      <div class="card">
+        <h3>Logs and data nobody has checked</h3>
+        <p>Application logs, stack traces, <code>kubectl logs</code> or API responses often carry e-mails, VINs, tokens or customer IDs.</p>
+      </div>
+      <div class="card">
+        <h3>Pasted output</h3>
+        <p>A quick copy from a terminal or a ticket can hold a password you did not notice.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>How it works</h2>
+    <div class="diagram">
+      <img src="assets/how-it-works.svg" width="1000" height="235" alt="A coding agent CLI on your Mac sends a prompt with a real password to PhantomPrompt, which sends a placeholder to the model provider and puts the real password back into the answer">
+    </div>
+    <p>A protected terminal sends the agent's traffic to PhantomPrompt. Before a prompt leaves your Mac, PhantomPrompt replaces every sensitive value with a placeholder and remembers the pair in memory. When the answer comes back, it puts the real values back in place.</p>
+    <img class="shot" src="assets/compact-view.png" width="1230" height="964" loading="lazy" alt="PhantomPrompt compact view: values masked by type, protected terminals connected through PhantomPrompt to AI services, recent activity by category and a live timeline">
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Supported agents</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Agent</th><th>Route</th></tr></thead>
+        <tbody>
+          <tr><td>Claude Code</td><td>Local gateway (<code>ANTHROPIC_BASE_URL</code> points at it), with its own token map per terminal.</td></tr>
+          <tr><td>Codex CLI</td><td>Local gateway for the built-in ChatGPT and OpenAI providers. A custom model provider runs behind the HTTPS proxy.</td></tr>
+          <tr><td>GitHub Copilot CLI</td><td>HTTPS proxy that inspects the Copilot API.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Quick start</h2>
+    <ol class="steps">
+      <li>Download <code>PhantomPrompt-&lt;version&gt;.dmg</code> from <a href="https://github.com/babadistrict/phantomprompt/releases/latest">Releases</a>, open it and drag <strong>PhantomPrompt</strong> to <strong>Applications</strong>.</li>
+      <li>PhantomPrompt is not notarized by Apple yet, so macOS blocks it on first start. This removes the "downloaded from the internet" mark from this one app:
+        <pre><code>xattr -dr com.apple.quarantine /Applications/PhantomPrompt.app</code></pre></li>
+      <li>Add the <code>phantom</code> command, then open a new terminal window:
+        <pre><code>echo 'alias phantom=/Applications/PhantomPrompt.app/Contents/MacOS/phantomprompt' &gt;&gt; ~/.zshrc</code></pre></li>
+      <li>Open a protected shell and start your agent in it, or protect a single command:
+        <pre><code>phantom
+phantom claude</code></pre></li>
+    </ol>
+    <p class="muted">Every release is built from the public repository by GitHub Actions. Full instructions are in the <a href="https://github.com/babadistrict/phantomprompt#readme">README</a>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Privacy</h2>
+    <ul class="points">
+      <li>No server of its own. It listens on loopback only.</li>
+      <li>Your prompts go, masked, to the AI service your agent already uses.</li>
+      <li>The token map stays in memory and is never written to disk.</li>
+      <li>The app log contains no prompt text or values.</li>
+    </ul>
+    <p class="muted">Masking is heuristic: it is a safety net, not a guarantee. Names or addresses in free prose are not detected. See the <a href="https://github.com/babadistrict/phantomprompt#threat-model">threat model</a>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>FAQ</h2>
+    <details>
+      <summary>Does PhantomPrompt send my data anywhere?</summary>
+      <p>No. It has no server of its own and listens on loopback only. Your prompts go, masked, to the AI service your agent already uses, and other traffic from a protected terminal passes through unchanged.</p>
+    </details>
+    <details>
+      <summary>Do I have to start my agent with <code>phantom</code>?</summary>
+      <p>Yes. Only tools started in a protected shell (<code>phantom</code>) or with <code>phantom &lt;command&gt;</code> are protected.</p>
+    </details>
+    <details>
+      <summary>Does it protect chats in the browser?</summary>
+      <p>No. PhantomPrompt protects the supported agents in a protected terminal.</p>
+    </details>
+    <details>
+      <summary>Which systems does it run on?</summary>
+      <p>macOS. On Linux the engine and CLI compile, but there is no app and no support.</p>
+    </details>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><a href="https://github.com/babadistrict/phantomprompt">GitHub</a> · <a href="https://github.com/babadistrict/phantomprompt/releases/latest">Releases</a> · <a href="https://github.com/babadistrict/phantomprompt/issues">Issues</a> · <a href="https://github.com/babadistrict">BaBa on GitHub</a></p>
+    <p>Contact: baba.bytes.dev [at] gmail [dot] com</p>
+    <p>PhantomPrompt is open source under the Apache License 2.0. Copyright 2026 BaBa.</p>
+    <p>PhantomPrompt is not affiliated with or endorsed by Anthropic, OpenAI or GitHub. Product names are trademarks of their owners.</p>
+  </div>
+</footer>
+
+</body>
+</html>

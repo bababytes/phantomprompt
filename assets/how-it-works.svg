@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 235" width="1000" height="235" role="img" aria-labelledby="title">
+  <title id="title">A coding agent CLI on your Mac sends a prompt with a real password to PhantomPrompt, which sends a placeholder to the model provider and puts the real password back into the answer</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; fill: #1f2328; }
+    .name { font-size: 16px; font-weight: 600; text-anchor: middle; }
+    .note { font-size: 12px; fill: #59636e; text-anchor: middle; }
+    .flow { font-size: 12px; text-anchor: middle; }
+    .token { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; text-anchor: middle; fill: #0969da; }
+    .mac { font-size: 12px; font-weight: 600; fill: #59636e; }
+    .line { stroke: #57606a; stroke-width: 1.5; marker-end: url(#arrow); }
+  </style>
+  <rect x="0.5" y="0.5" width="999" height="234" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+  <rect x="25" y="30" width="565" height="175" rx="10" fill="none" stroke="#8c959f" stroke-dasharray="6 5"/>
+  <text class="mac" x="41" y="52">Your Mac</text>
+
+  <rect x="50" y="85" width="160" height="90" rx="8" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text class="name" x="130" y="124">Coding agent CLI</text>
+  <text class="note" x="130" y="146">claude · codex · copilot</text>
+
+  <rect x="410" y="85" width="160" height="90" rx="8" fill="#ddf4ff" stroke="#54aeff"/>
+  <text class="name" x="490" y="124">PhantomPrompt</text>
+  <text class="note" x="490" y="146">masks and restores</text>
+
+  <rect x="805" y="85" width="175" height="90" rx="8" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text class="name" x="892.5" y="124">Model provider</text>
+  <text class="note" x="892.5" y="146">Anthropic · OpenAI · GitHub</text>
+
+  <line class="line" x1="212" y1="112" x2="406" y2="112"/>
+  <text class="flow" x="310" y="102">prompt with a real password</text>
+  <line class="line" x1="572" y1="112" x2="801" y2="112"/>
+  <text class="token" x="698" y="102">prompt with [PP_SECRET_…]</text>
+
+  <line class="line" x1="801" y1="150" x2="574" y2="150"/>
+  <text class="token" x="698" y="170">answer with [PP_SECRET_…]</text>
+  <line class="line" x1="406" y1="150" x2="214" y2="150"/>
+  <text class="flow" x="310" y="170">answer with the real password</text>
+</svg>
