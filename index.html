@@ -150,6 +150,17 @@ header .icon { width: 112px; height: 112px; filter: drop-shadow(0 18px 40px var(
 }
 .button.primary:hover { background: var(--primary-bg-hover); }
 .works-with { font-size: 15px; }
+.trust { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 10px; padding: 0; margin: 18px auto 0; max-width: 960px; }
+.trust li {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 10px; border-radius: 999px;
+  font: 500 13px/1.4 var(--mono); color: var(--text); background: var(--bg-raise); border: 1px solid var(--line-strong);
+}
+.trust svg { width: 16px; height: 16px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.card .card-label { font: 500 12px/1.4 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px !important; }
+.privacy .card p:last-child { color: var(--muted); }
+.callout { margin: 16px 0 20px; padding: 18px 20px; border-radius: 14px; background: var(--accent-soft); border: 1px solid rgb(76 201 149 / .35); }
+.callout h3 { margin-bottom: 6px; }
+.callout p { margin: 0; color: var(--text); }
 .hero-gif {
   display: block; margin: 40px auto 0; width: 720px; border-radius: 18px; border: 1px solid var(--line-strong);
   box-shadow: 0 30px 80px -30px var(--accent-glow), 0 0 0 6px rgb(var(--ink-rgb) / .02);
@@ -232,7 +243,13 @@ footer p { margin-bottom: 6px; }
     <a class="button primary" href="https://github.com/babadistrict/phantomprompt/releases/latest">Download for macOS</a>
     <a class="button" href="https://github.com/babadistrict/phantomprompt">View on GitHub</a>
   </div>
-  <p class="muted works-with">Free and open source (Apache-2.0) · Works with Claude Code, Codex CLI and GitHub Copilot CLI</p>
+  <p class="muted works-with">Works with Claude Code, Codex CLI and GitHub Copilot CLI</p>
+  <ul class="trust">
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>Runs on your Mac</li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>No account, no telemetry</li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Token map never touches disk</li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>Free and open source</li>
+  </ul>
   <img class="hero-gif" src="assets/pipeline.gif" width="720" alt="Animation: values typed in a terminal, such as a VIN and an e-mail address, pass through PhantomPrompt and reach the AI provider as placeholders">
 </header>
 
@@ -282,6 +299,31 @@ footer p { margin-bottom: 6px; }
     </div>
     <p>A protected terminal sends the agent's traffic to PhantomPrompt. Before a prompt leaves your Mac, PhantomPrompt replaces every sensitive value with a placeholder and remembers the pair in memory. When the answer comes back, it puts the real values back in place.</p>
     <img class="shot" src="assets/compact-view.png" width="1230" height="964" loading="lazy" alt="PhantomPrompt compact view: values masked by type, protected terminals connected through PhantomPrompt to AI services, recent activity by category and a live timeline">
+  </div>
+</section>
+
+<section class="reveal">
+  <div class="wrap">
+    <h2>Privacy &amp; security</h2>
+    <div class="cards privacy">
+      <div class="card">
+        <p class="card-label">Stays on your Mac</p>
+        <p>The real values and the token map that links them to placeholders. The map lives in memory only and is never written to disk.</p>
+      </div>
+      <div class="card">
+        <p class="card-label">Leaves your Mac</p>
+        <p>Only the masked prompt, sent to the AI service your agent already uses. PhantomPrompt has no server of its own and listens on loopback only.</p>
+      </div>
+      <div class="card">
+        <p class="card-label">Saved on disk</p>
+        <p>Your masking rules and a daily app log without prompt text or values; the newest 7 logs are kept. Only your user account can read them.</p>
+      </div>
+    </div>
+    <div class="callout">
+      <h3>Agent telemetry switched off</h3>
+      <p>In a protected terminal, Claude Code telemetry and error reports and Codex CLI analytics are turned off for that session, because they would bypass masking. Your agent's own settings files are not changed.</p>
+    </div>
+    <p class="muted">Masking is heuristic: a safety net, not a guarantee. Names or addresses in free prose are not detected, and processes running as your user can read the app's memory. See the <a href="https://github.com/babadistrict/phantomprompt#threat-model">threat model</a>.</p>
   </div>
 </section>
 
@@ -350,19 +392,6 @@ phantom copilot</code></pre>
       </li>
     </ol>
     <p class="muted">Every release is built from the public repository by GitHub Actions. Full instructions are in the <a href="https://github.com/babadistrict/phantomprompt#readme">README</a>.</p>
-  </div>
-</section>
-
-<section class="reveal">
-  <div class="wrap">
-    <h2>Privacy</h2>
-    <ul class="points">
-      <li>No server of its own. It listens on loopback only.</li>
-      <li>Your prompts go, masked, to the AI service your agent already uses.</li>
-      <li>The token map stays in memory and is never written to disk.</li>
-      <li>The app log contains no prompt text or values.</li>
-    </ul>
-    <p class="muted">Masking is heuristic: it is a safety net, not a guarantee. Names or addresses in free prose are not detected. See the <a href="https://github.com/babadistrict/phantomprompt#threat-model">threat model</a>.</p>
   </div>
 </section>
 
