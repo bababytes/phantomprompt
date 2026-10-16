@@ -51,14 +51,21 @@ PhantomPrompt masks the formats it knows before any of this leaves your Mac. It 
 
 ### Install
 
-1. Download `PhantomPrompt-<version>.dmg` from [Releases](https://github.com/babadistrict/phantomprompt/releases/latest), open it and drag **PhantomPrompt** to **Applications**.
-2. Let macOS run it. PhantomPrompt is not notarized by Apple yet, so macOS blocks it on first start. This command removes the "downloaded from the internet" mark from this one app:
+1. **Download.** Get PhantomPrompt from [Releases](https://github.com/babadistrict/phantomprompt/releases/latest) and drag it to **Applications**.
+2. **Allow it once.** macOS blocks apps that Apple has not checked yet. Allow PhantomPrompt with one command in Terminal:
 
    ```sh
    xattr -dr com.apple.quarantine /Applications/PhantomPrompt.app
    ```
 
-3. Add the `phantom` command, then open a new terminal window:
+   <details>
+   <summary>What does it do?</summary>
+
+   PhantomPrompt is not notarized by Apple yet. This command removes the "downloaded from the internet" mark from this one app, so macOS lets it start.
+
+   </details>
+
+3. **Add the `phantom` command.** Paste this into Terminal, then open a new terminal window:
 
    ```sh
    echo 'alias phantom=/Applications/PhantomPrompt.app/Contents/MacOS/phantomprompt' >> ~/.zshrc
@@ -79,17 +86,17 @@ Each downloaded file should print `OK`. Command-line builds without the app are 
 
 </details>
 
-### Protect your terminal
+### Start your agent
 
-```sh
-phantom
-```
-
-This opens a protected shell: `claude`, `codex`, `copilot` and other tools you start in it go through PhantomPrompt. Type `exit` to leave. To protect a single command, put `phantom` in front of it:
+Put `phantom` in front of your agent:
 
 ```sh
 phantom claude
+phantom codex
+phantom copilot
 ```
+
+Or type `phantom` alone to open a protected shell and start any of them inside it. Type `exit` to leave.
 
 ### Commands
 
@@ -257,7 +264,7 @@ The release is signed with a Developer ID and notarized when the repository has 
 
 ## Say hi 👋
 
-Want to run PhantomPrompt at your company, need a hand setting it up, or just have an idea to talk through? Drop me a line at **baba.bytes.dev [at] gmail [dot] com**. I read everything.
+Want to run PhantomPrompt at your company, need a hand setting it up, or just have an idea to talk through? Drop me a line at **baba.district.dev [at] gmail [dot] com**. I read everything.
 
 Found a bug? An [issue](https://github.com/babadistrict/phantomprompt/issues) is the fastest way to get it fixed.
 
