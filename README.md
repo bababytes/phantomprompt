@@ -264,7 +264,7 @@ The release is signed with a Developer ID and notarized when the repository has 
 
 ## Say hi 👋
 
-Want to run PhantomPrompt at your company, need a hand setting it up, or just have an idea to talk through? Drop me a line at **baba.district.dev [at] gmail [dot] com**. I read everything.
+Want to run PhantomPrompt at your company, need a hand setting it up, or just have an idea to talk through? Drop me a line at [baba.district.dev@gmail.com](mailto:baba.district.dev@gmail.com). I read everything.
 
 Found a bug? An [issue](https://github.com/babadistrict/phantomprompt/issues) is the fastest way to get it fixed.
 
