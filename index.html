@@ -116,8 +116,18 @@ th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--bo
 th { color: var(--muted); font-weight: 600; font-size: 15px; }
 .table-scroll { overflow-x: auto; }
 
-ol.steps { padding-left: 20px; }
-ol.steps li { margin-bottom: 18px; }
+ol.steps { list-style: none; padding: 0; margin: 24px 0; }
+ol.steps > li { display: flex; gap: 16px; margin-bottom: 28px; }
+ol.steps > li > div { flex: 1; min-width: 0; }
+.step-number {
+  flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-fg); font-weight: 700;
+}
+.command { display: flex; flex-direction: column; }
+.copy {
+  order: -1; align-self: flex-end; margin-bottom: -4px; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+  font: 600 13px/1.4 inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border);
+}
 ul.points { padding-left: 20px; }
 ul.points li { margin-bottom: 8px; }
 
@@ -203,16 +213,41 @@ footer p { margin-bottom: 6px; }
 
 <section>
   <div class="wrap">
-    <h2>Quick start</h2>
+    <h2>Get started in 3 steps</h2>
     <ol class="steps">
-      <li>Download <code>PhantomPrompt-&lt;version&gt;.dmg</code> from <a href="https://github.com/babadistrict/phantomprompt/releases/latest">Releases</a>, open it and drag <strong>PhantomPrompt</strong> to <strong>Applications</strong>.</li>
-      <li>PhantomPrompt is not notarized by Apple yet, so macOS blocks it on first start. This removes the "downloaded from the internet" mark from this one app:
-        <pre><code>xattr -dr com.apple.quarantine /Applications/PhantomPrompt.app</code></pre></li>
-      <li>Add the <code>phantom</code> command, then open a new terminal window:
-        <pre><code>echo 'alias phantom=/Applications/PhantomPrompt.app/Contents/MacOS/phantomprompt' &gt;&gt; ~/.zshrc</code></pre></li>
-      <li>Open a protected shell and start your agent in it, or protect a single command:
-        <pre><code>phantom
-phantom claude</code></pre></li>
+      <li>
+        <span class="step-number">1</span>
+        <div>
+          <h3>Install</h3>
+          <p><a href="https://github.com/babadistrict/phantomprompt/releases/latest">Download the app</a> and drag <strong>PhantomPrompt</strong> to <strong>Applications</strong>.</p>
+        </div>
+      </li>
+      <li>
+        <span class="step-number">2</span>
+        <div>
+          <h3>Set up once</h3>
+          <p>Paste this into Terminal, then open a new terminal window.</p>
+          <div class="command">
+            <pre><code>xattr -dr com.apple.quarantine /Applications/PhantomPrompt.app
+echo 'alias phantom=/Applications/PhantomPrompt.app/Contents/MacOS/phantomprompt' &gt;&gt; ~/.zshrc</code></pre>
+            <button class="copy" type="button">Copy</button>
+          </div>
+          <details>
+            <summary>What does it do?</summary>
+            <p>PhantomPrompt is not notarized by Apple yet, so macOS blocks it on first start. The first line removes the "downloaded from the internet" mark from this one app. The second adds the <code>phantom</code> command to your shell.</p>
+          </details>
+        </div>
+      </li>
+      <li>
+        <span class="step-number">3</span>
+        <div>
+          <h3>Start your agent with <code>phantom</code></h3>
+          <pre><code>phantom claude
+phantom codex
+phantom copilot</code></pre>
+          <p class="muted">Or type <code>phantom</code> alone to open a protected shell and start any of them inside it.</p>
+        </div>
+      </li>
     </ol>
     <p class="muted">Every release is built from the public repository by GitHub Actions. Full instructions are in the <a href="https://github.com/babadistrict/phantomprompt#readme">README</a>.</p>
   </div>
@@ -263,5 +298,18 @@ phantom claude</code></pre></li>
   </div>
 </footer>
 
+<script>
+document.querySelectorAll(".copy").forEach(button => {
+  button.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(button.previousElementSibling.textContent);
+      button.textContent = "Copied";
+    } catch {
+      button.textContent = "Select and copy";
+    }
+    setTimeout(() => { button.textContent = "Copy"; }, 2000);
+  });
+});
+</script>
 </body>
 </html>
